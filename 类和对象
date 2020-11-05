@@ -1,0 +1,337 @@
+import java.util.Arrays;
+
+class Person {
+    //成员属性
+    public int age;//实例成员变量
+    public String name;
+    /*public boolean flg;
+    public char ch;*/
+    public static int count;//静态成员变量
+
+    public void eat() {
+        System.out.println("吃饭");
+    }
+    public static void func() {
+        //age = 40;
+        //func2();
+        System.out.println("静态的方法");
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "age=" + age +
+                ", name='" + name + '\'' +
+                '}';
+    }
+
+    }
+
+class Test {
+    public int a = 10;
+    public static int count = 100;
+}
+
+
+
+class Person2 {
+
+    private String name;
+    private int age;
+    public static int count = 100;
+
+    //this ：代表当前对象的引用
+    //习惯使用this
+
+    static {
+        //this.name = "13";
+        count = 99;
+        System.out.println("静态代码块");
+    }
+
+    {
+        this.name = "bit";
+        System.out.println("实例代码块");
+    }
+
+    public Person2(){
+        //this("Java");
+        //this("hello树先生",99);
+        System.out.println("Person2()");
+    }
+
+    public Person2(String name) {
+        this.name = name;
+        System.out.println("Person2(String)");
+    }
+
+    public Person2(String name, int age) {
+        this.name = name;
+        this.age = age;
+        System.out.println("Person2(String,int)");
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+
+        this.name = name;
+    }
+
+    public int getAge() {
+        return this.age;
+    }
+
+    public void setAge(int age) {
+
+        this.age = age;
+    }
+
+    private void func4() {
+        System.out.println("func()");
+    }
+
+    public void func2() {
+        this.func4();
+    }
+
+    public static void func5() {
+        //this.name = "Java";  静态方法的内部 不能够使用this
+    }
+
+    @Override
+    public String toString() {
+        return "Person2{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+
+public class DaDa {
+
+
+
+    public static void function(Person2 person2) {
+        System.out.println(person2.getName());
+    }
+    public static void main(String[] args) {
+        Person2 person2 = new Person2();
+        System.out.println(Person2.count);
+        //System.out.println(new Person2().getName());
+        function(new Person2());
+      /*  System.out.println("===========");
+        Person2 person21 = new Person2();*/
+
+        //System.out.println(person2);
+        /*Person2 person3 = new Person2("Java");
+        Person2 person4 = new Person2("Java",18);*/
+    }
+
+
+    public static void main7(String[] args) {
+        Person2 person2 = new Person2();
+        //person2.name = "Java";
+        person2.setName("Java");
+        //person2.age = 99;
+        person2.setAge(99);
+        person2.func2();
+
+        //System.out.println(person2.age);
+        System.out.println(person2.getAge());
+        //System.out.println(person2.name);
+        System.out.println(person2.getName());
+
+
+    }
+
+
+
+
+
+
+    public static void main6(String[] args) {
+        Test t1 = new Test();  //跟person的定义方法一样
+        t1.a++;
+        Test.count++;
+        System.out.println(t1.a);//11
+        System.out.println(Test.count);//101
+        System.out.println("================");
+        Test t2 = new Test();
+        t2.a++;
+        Test.count++;
+        System.out.println(t2.a);//11
+        System.out.println(Test.count);//102
+    }
+
+    public static void main5(String[] args) {
+        Person person1 = new Person();//对象的实例化
+        person1.name = "gaobo";
+        //person2这个引用  指向/引用了  person1这个引用  所指向/引用的对象
+        Person person2 = person1;
+        System.out.println(person2.name);
+        System.out.println(person1);
+    }
+
+
+
+    public static void main4(String[] args) {
+        Person person1 = new Person();//对象的实例化
+        person1.name = "gaobo";
+        person1.age = 10;
+        person1.eat();
+        System.out.println(person1.name);
+
+        System.out.println(Person.count);
+        Person.func();
+    }
+
+
+    public static void main3(String[] args) {
+        Person person1 = new Person();//对象的实例化
+        person1.name = "gaobo";
+        person1.age = 10;
+        System.out.println(person1.name);
+        System.out.println(person1.age);
+        Person person2 = new Person();
+        person2.age = 99;
+        person2.name = "Java";
+        System.out.println(person2.name);
+        System.out.println(person2.age);
+    }
+
+
+    public static void main2(String[] args) {
+        Person person = new Person();//对象的实例化
+        System.out.println(person.age);
+        System.out.println(person.name);
+        person.eat();
+        /*System.out.println(person.flg);
+        System.out.println(person.ch);*/
+    }
+
+
+
+
+
+    public static void main1(String[] args) {
+        int a = 10;
+        int[] array = new int[10];
+        Arrays.fill(array,2,5,99);
+        System.out.println(Arrays.toString(array));
+    }
+
+
+}
+
+
+
+import java.util.Arrays;
+
+//实现交换两个变量的值。要求：需要交换实参的值
+//设计一个包含多个构造函数的类，并分别用这些构造函数来进行实例化对象
+
+
+
+class TangYing {
+    public String ying;
+    public String wo;
+    public String aini;
+    public TangYing() {
+        this.ying = "颖";
+        this.wo = "我";
+        this.aini = "爱";
+    }
+    public void show(){
+        System.out.println(ying+wo+aini);
+    }
+}
+
+class Calculator {
+    public int num1;
+    public int num2;
+    public void sum() {
+        System.out.println(num1+num2);
+    }
+    public void jian() {
+        System.out.println(num1-num2);
+    }
+    public void chen() {
+        System.out.println(num1*num2);
+    }
+    public void chu() {
+        System.out.println(num1*1.0/num2);
+    }
+    }
+
+public class HomeWork {
+
+    //设计一个包含多个构造函数的类，并分别用这些构造函数来进行实例化对象
+    public static void main2(String[] args) {
+        TangYing tangying = new TangYing();
+        tangying.show();
+    }
+
+
+    //编写一个类Calculator,有两个属性num1,num2,这两个数据的值，不能在定义的同时初始化，最后实现加减乘除四种运算
+    public static void main1(String[] args) {
+        Calculator yunsuan = new Calculator();
+        yunsuan.sum();
+        yunsuan.jian();
+        yunsuan.chen();
+        yunsuan.chu();
+        System.out.println(yunsuan);
+
+    }
+
+
+
+
+
+    //给定两个整型数组, 交换两个数组的内容
+    public static void swap(int[] array, int[] array2) {
+        int tmp = 0;
+        for (int i = 0; i < array.length; i++) {
+            tmp = array[i];
+            array[i] = array2[i];
+            array2[i] = tmp;
+        }
+    }
+    public static void main4(String[] args) {
+        int[] array1 = {0,1,2,3,4};
+        int[] array2= {5,6,7,8,9};
+        swap(array1,array2);
+        System.out.println(Arrays.toString(array1));
+        System.out.println(Arrays.toString(array2));
+    }
+
+
+    //给定整型数组, 把所有的偶数放到数组前面, 把所有奇数放到数组后面
+    public static void arrays(int[] array) {
+        int left = 0;
+        int right = array.length - 1;
+        while (left < right){
+            while(left < right && array[left] % 2 == 0){
+                left++;
+            }
+            while (left < right && array [right]%2!=0){
+                right--;
+            }
+            int tmp = array[left];
+            array[left] = array[right];
+            array[right] = tmp;
+        }
+        System.out.println(Arrays.toString(array));
+    }
+    public static void main3(String[] args) {
+        int[] array = {4,8,2,5,6,9,10,7,4};
+        arrays(array);
+    }
+
+
+
+
+
+}

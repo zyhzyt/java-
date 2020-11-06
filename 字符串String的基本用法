@@ -1,0 +1,255 @@
+package demo1;
+
+import java.lang.reflect.Field;
+
+class Person {
+    private String name;
+
+    private Person() {
+    }
+}
+
+
+public class TextDemo {
+
+
+    public static void main5(String[] args) throws NoSuchFieldException, IllegalAccessException {
+        String str = "hello";
+        Class cl = String.class;
+        Field field = cl.getDeclaredField("value");
+        field.setAccessible(true);
+
+        char[] value = (char[]) field.get(str);
+        // 修改 value 的值
+        value[0] = 'H';
+        System.out.println(str);
+
+    }
+
+    public static void main4(String[] args) {
+        String str1 = "hello";
+        String str2 = new String("hello").intern();
+        System.out.println(str1 == str2);
+    }
+
+    public static void main3(String[] args) {
+        /*String str1 = "hello";
+        String str2 = new String("hello").intern();
+        System.out.println(str1 == str2);*/
+
+        String str1 = "Hello";
+        String str2 = str1;
+        System.out.println(str1);
+        System.out.println(str2);
+        str1 = "bit";
+        System.out.println(str1);
+        System.out.println(str2);
+    }
+
+    public static void main2(String[] args) {
+        String str1 = "hello";
+        String str2 = new String("hello");
+        System.out.println(str1 == str2);
+        System.out.println(str1.equals(str2));
+
+        String str3 = "he"+"llo";//"hello"
+        System.out.println(str1 == str3);
+
+        String str4 = "he";
+        String str5 = str4+"llo";//
+        System.out.println(str1 == str5);
+
+        String str6 = new String("he")+"llo";
+        System.out.println(str6 == str1);
+
+    }
+
+
+    public static void main1(String[] args) {
+        String str1 = "hello";
+
+        String str2 = new String("hello");
+
+        char[] array = {'h','e','l','l','o'};
+        String str3 = new String(array);
+    }
+
+}
+
+
+package demo1;
+
+import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
+
+public class TextDemo2 {
+
+
+
+    public static void main(String[] args) {
+        /*String str = "hello\\bit\\Java";
+        String[] ret = str.split("\\\\");
+        for (String s : ret) {
+            System.out.println(s);
+        }*/
+        /*String str="Java30-split#bit";
+        String[] ret = str.split(" |-|#");
+        for (String s : ret) {
+            System.out.println(s);
+        }*/
+        String str = "name=zhangsan&age=18";
+        String[] ret1 = str.split("&");
+        //name=zhangsan
+        //age=18
+        for (String s1 : ret1) {
+            String[] ret2 = s1.split("=");
+            for (String s2 :ret2) {
+                System.out.println(s2);
+            }
+        }
+
+    }
+
+    public static void main6(String[] args) {
+        String str = "hellobitbitabcd";
+        System.out.println(str.replace("it","xx"));
+        //从后往前找
+        /*System.out.println(str.lastIndexOf("bit",7));
+        System.out.println(str.contains("bit"));
+        System.out.println(str.indexOf("bit",6));
+        */
+    }
+
+
+    public static void main4(String[] args) {
+        String str = "abcdefg";
+        String str2 = "abcde";
+        System.out.println(str.equals(str2));
+        //equalsIgnoreCase 忽略大小写进行比较
+        System.out.println(str.equalsIgnoreCase(str2));
+        //str和str2比较
+        int ret = str.compareTo(str2);
+        System.out.println(ret);
+    }
+
+
+
+    public static boolean isNumberChar(String str) {
+        for (int i = 0; i < str.length(); i++) {
+            if(str.charAt(i) < '0' || str.charAt(i) > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static void main3(String[] args) throws UnsupportedEncodingException {
+        //        String str = "123456";
+//        System.out.println(isNumberChar(str));
+//
+       /* byte[] bytes = {97,98,99,100};
+        String str = new String(bytes,8);
+        System.out.println(str);*/
+
+        /*String str = "高博";
+        byte[] bytes = str.getBytes("GBK");
+        System.out.println(Arrays.toString(bytes));*/
+    }
+
+
+
+    public static void main2(String[] args) {
+        char[] array = {'a','b','c'};
+        String str = new String(array,1,2);
+        System.out.println(str);
+
+        String str2 = "abcdef";
+        char ch = str2.charAt(2);
+        System.out.println(ch);
+        System.out.println(str2.length());
+
+        char[] array2 = str2.toCharArray();
+        System.out.println(Arrays.toString(array2));
+
+    }
+
+
+    public static void main1(String[] args) {
+        String str = "hello";
+        for (int i = 0; i < 10; i++) {
+            str += i;
+        }
+        System.out.println(str);
+    }
+
+
+
+}
+
+
+package com.bit.demo1;
+
+
+public class Text {
+
+
+
+
+
+
+    public static String reverse(String str) {
+        if(str == null) return null;
+        //1、先把字符串转变为数组
+        char[] array = str.toCharArray();
+        //2、开始逆置
+        int i = 0;
+        int j = array.length-1;
+        while (i < j) {
+            char tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+            i++;
+            j--;
+        }
+        //3、把数组变成字符串
+        //return new String(array);
+        //return String.valueOf(array);
+        return String.copyValueOf(array);
+    }
+
+    public static String reverse2(String str,int i,int j) {
+        if(str == null) return null;
+        //1、先把字符串转变为数组
+        char[] array = str.toCharArray();
+        //2、开始逆置
+        while (i < j) {
+            char tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+            i++;
+            j--;
+        }
+        return String.copyValueOf(array);
+    }
+
+    public static String reverseK(String str,int k) {
+        if(str == null) return null;
+        int len = str.length();
+        if(len == 0 || k <= 0 || k > len) {
+            return null;
+        }
+        str = reverse2(str,0,k-1);//bacdef
+        str = reverse2(str,k,len-1);//bafedc
+        str = reverse2(str,0,len-1);//cdefab
+        return str;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(reverseK("abcdef",2));
+    }
+
+
+
+}
+
+

@@ -1,0 +1,274 @@
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
+
+public class Work1 {
+
+
+
+
+    //快速排序
+    //给定一个整数数组a,同时给定它的大小n和要找的K(K在1到n之间)，请返回第K大的数，保证答案存在。
+
+    public class Finder {
+        public int findKth(int[] a, int n, int K) {
+            return quickSort(a,0,n-1,K);
+        }
+        private int quickSort(int[] arr, int low, int high,int K){
+            int p = partion(arr,low,high);
+            if(K == p-low+1){
+                return arr[p];
+            }else if(p-low+1 > K){
+                //递归左边
+                return quickSort(arr,low,p-1,K);
+            }else{
+                //递归右边
+                return quickSort(arr,p+1,high,K-(p-low+1));
+            }
+        }
+        private int partion(int[] arr, int low, int high){
+            int tmp = arr[low];
+            while(low < high){
+                while(low < high && arr[high] <= tmp){
+                    high--;
+                }
+                if(low == high){
+                    break;
+                }else{
+                    arr[low] = arr[high];
+                }
+                while(low < high && arr[low] >= tmp){
+                    low++;
+                }
+                if(low == high){
+                    break;
+                }else{
+                    arr[high] = arr[low];
+                }
+            }
+            arr[low] = tmp;
+            return low;
+        }
+    }
+
+
+
+
+
+    //判断是否为回文
+    public static boolean HuiWen(String s){
+        int i=0;
+        int j=s.length()-1;
+        while(i<j){
+            if(s.charAt(i)!=s.charAt(j)){
+                return false;
+            }
+            i++;
+            j--;
+        }
+        return true;
+    }
+    public static void main(String[] args){
+        Scanner sc =new Scanner(System.in);
+        String str1=sc.nextLine();
+        String str2=sc.nextLine();
+        int count=0;
+        for(int i=0;i<=str1.length();i++){
+            StringBuilder sb=new StringBuilder(str1);
+            sb.insert(i,str2);//从0号位置开始插入
+            if(HuiWen(sb.toString())){
+                //说明是回文，计数+1
+                count++;
+            }
+        }
+        System.out.println(count);
+    }
+
+
+
+
+
+}
+
+
+
+import java.util.Scanner;
+
+
+class AntiOrder {
+    //逆序对
+    public int count(int[] A, int n) {
+
+        // write code here
+        if (n <= 0) return -1;
+        int count = 0;
+        for(int i = 0;i < n;i++){
+            for(int j = i+1;j < n;j++) {
+                if(A[i] > A[j]) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+}
+
+
+public class Work {
+    public static void main(String[] args){
+//        Scanner scan = new Scanner(System.in);
+//        while(scan.hasNext()){
+//            int n = scan.nextInt();
+//            int total = 0;
+//            if(n == 0)
+//                return;
+//            while(n >= 3){
+//                total += n/3;
+//                n = n/3+n%3;
+//            }
+//            if(n==2)
+//                total += 1;
+//            System.out.println(total);
+//        }
+
+        //卖水瓶子
+        Scanner sc = new Scanner(System.in);
+        while(sc.hasNext()){
+            int n = sc.nextInt();
+            int t = 0;
+            if (n == 0) return;
+            while(n > 2){
+                t = t+n/3;
+                n = n/3 + n%3;
+            }
+            if(n == 2){
+                t = t+1;
+            }
+            System.out.println(t);
+        }
+    }
+
+
+}
+
+
+
+
+import java.util.Scanner;
+import java.util.Stack;
+
+
+class Parenthesis {
+
+    //一个合法的括号串定义为:1.只包括括号字符;2.左括号和右括号——对应
+    public boolean chkParenthesis(String A, int n) {
+        // write code here
+        Stack<Character> stack = new Stack<>();
+        for(int i = 0;i < n;i++){
+            if(A.charAt(i) == '('){
+                stack.push(A.charAt(i));
+            }
+            if(A.charAt(i) == ')'){
+                if(!stack.isEmpty()){
+                    stack.pop();
+                }else {
+                    return false;
+                }
+            }
+        }
+        if(stack.isEmpty()){
+            return true;
+        }
+        return false;
+    }
+}
+
+
+public class Main {
+
+    //在一行内输出str中里连续最长的数字串。
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        while(scanner.hasNext()){
+            String str = scanner.nextLine();
+            int max = 0;
+            int count = 0;
+            int end = 0;
+            for(int i = 0;i < str.length();i++){
+                if(str.charAt(i) >= '0' && str.charAt(i) <= '9'){
+                    count++;
+                    if(max < count){  // 重新计数产生的count大于max时才让把count赋值给max
+                        max = count;//记录最大数字串的长度
+                        end = i;//记录最大数字串的末尾位置
+                    }
+                }
+                else{
+                    count = 0; //计数器归o
+                }
+            }
+            System.out.println(str.substring(end-max+1,end+1));
+        }
+    }
+}
+
+
+
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
+
+public class Text {
+
+    public static void main(String[] args) {
+//        Scanner scan = new Scanner(System.in);
+//        int n = scan.nextInt();
+//        int f1 = 0;
+//        int f2 = 1;
+//        int f3 = 1;
+//
+//        while(f3 < n) {
+//            f3 = f1+f2;
+//            f1 = f2;
+//            f2 = f3;
+//        }
+//        //
+//        int ret = Math.min( Math.abs(f1-n),Math.abs(f2-n));
+//        System.out.println(ret);
+        Scanner sc = new Scanner(System.in);
+        int N = sc.nextInt();
+        int[] feibo = new int[2*N];
+        feibo[0] = 0;
+        feibo[1] = 1;
+        int ret = 0;
+        for (int i = 2;i < feibo.length;i++) {
+            feibo[i] = feibo[i-1] + feibo[i-2];
+        }
+        for (int i = 0;i < feibo.length;i++) {
+            if (feibo[i] > N && N > feibo[i-1]) {
+                ret = Math.min( Math.abs(i-N),Math.abs(i-1-N));
+            }
+        }
+        System.out.println(ret);
+    }
+
+}
+
+
+import java.util.HashSet;
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args){
+        Scanner scan = new Scanner(System.in);
+        HashSet<String> set = new HashSet<>();
+        while(scan.hasNextLine()){
+            String str = scan.nextLine();
+            String[] str1 = str.split(" ");
+            for(String s:str1) {
+                set.add(s);
+            }
+        }
+        System.out.println(set.size());
+    }
+}

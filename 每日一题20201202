@@ -1,0 +1,139 @@
+import java.util.Scanner;
+
+public class Main {
+
+    //输入一个整数，将这个整数以字符串的形式逆序输出
+    public static void main(String[] args) {
+        int n = new Scanner(System.in).nextInt();
+        System.out.println(reverse(n));
+    }
+    private static String reverse(int n){
+        String str = String.valueOf(n);
+        StringBuffer sb = new StringBuffer();
+        for(int i=str.length()-1;i>=0;i--){
+            sb.append(str.charAt(i));
+        }
+        return sb.toString();
+    }
+
+    //输入一个正整数n，求n！(即阶乘)末尾有多少个0？比如：n=10；n！3628800，所以答案为2
+    public static void main1(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        int res = 0;
+        for(int i = n; i >= 5; i--) {
+            int tmp = i;
+            while(tmp % 5 == 0) {
+                res++;
+                tmp /= 5;
+            }
+        }System.out.println(res);
+    }
+
+
+}
+
+import java.util.Scanner;
+
+public class Main {
+
+    //有一个XxY的网格，一个机器人只能走格点且只能向右或向下走，
+    // 要从左上角走到右下角。请设计—个算法，计算机器人有多少种走法。
+    public static void main(String[] args) {
+
+    }
+
+
+    //Fibonacci数列中的数我们称为Fibonacci数。给你一个N，
+    // 你想让其变为一个Fibonacci数，每一步你可以把当前数字X变为X-1或者×+1，
+    // 现在给你一个数N求最少需要多少步可以变为Fibonacci数。
+    public static void main1(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        int f1 = 0,f2 = 1,f3 = 1;
+        while (f3 < n) {
+            f3 = f1+f2;
+            f1 = f2;
+            f2 = f3;
+        }
+        System.out.println(Math.min( Math.abs(f1-n),Math.abs(f2-n)));
+
+    }
+
+
+}
+
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Scanner;
+
+public class Main {
+
+    //有一个数组a[N]顺序存放O~N-1，要求每隔两个数删掉─个数，
+    // 到末尾时循环至开头继续进行，求最后一个被删掉的数的原始下标位置。
+    // 以8个数(N=7)为例: {0，1，2，3，4，5，6，7} ，
+    // O->1->2(删除)->3->4->5(删除)->6->7->0(删除)如此循环直到最后一个数被删除。
+    public static void main1(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        while (scanner.hasNext()) {
+            int n = scanner.nextInt();
+            int[] arr = new int[n];
+            for (int i = 0; i < arr.length; i++) {
+                arr[i] = i;
+            }
+            System.out.println(delete(arr));
+        }
+
+    }
+
+    public static int delete(int[] arr) {
+        Queue<Integer> queue = new LinkedList<>();
+        for (int i = 0; i < arr.length; i++) {
+            queue.add(arr[i]);
+        }
+        while (queue.size() != 1) {
+            int count = 0;
+            while (count != 2) {
+                queue.offer(queue.peek());
+                queue.poll();
+                count++;
+            }
+            queue.poll();
+        }
+        return queue.peek();
+    }
+
+
+
+    //找出n个数里最小的k个  建一哥k个大小的大根堆
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while(sc.hasNext()){
+            String s = sc.nextLine();
+            String[] str = s.split(" ");
+            int k = Integer.parseInt(str[str.length - 1]);
+            int i = 0;
+            while(i < k){
+                int min = i;
+                for(int j = min + 1;j < str.length - 2;j++){
+                    if(Integer.parseInt(str[min]) > Integer.parseInt(str[j])){
+                        min = j;
+                    }
+                }
+                String tmp = str[i];
+                str[i] = str[min];
+                str[min] = tmp;
+                if(i == (k - 1)){
+                    System.out.print(str[i]);
+                }else{
+                    System.out.print(str[i]+" ");
+                }
+                i++;
+            }
+        }
+    }
+
+    
+}
+

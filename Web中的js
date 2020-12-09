@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h1 id="content">陈沛鑫</h1>
+        <button id="button">请点我</button>
+        <script src="jquery-3.5.0.min.js"></script>
+        <script src="index.js"></script>
+    </body>
+</html>
+
+$(function main() {
+    // 找到 id 是 content 的元素
+    // 当 这个元素发生了 mouseover(鼠标越过) 事件时
+    // 执行我们传入的方法
+    // 把 id 是 content 的元素的内部 html 内容替换成 "高博"
+    $("#content").on("mouseover", function () {
+        $("#content").html("高博");
+    });
+
+    $("#content").on("mouseout", function () {
+        $("#content").html("陈沛鑫");
+    });
+});
+
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            .square {
+                width: 50px;
+                height: 50px;
+                margin-bottom: 20px;
+            }
+
+            .s1 {
+                background-color: red;
+            }
+
+            .s2 {
+                background-color: blue;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="square s1"></div>
+        <div class="square s2"></div>
+        <div class="square s1"></div>
+        <div class="square s2"></div>
+        <div class="square s1"></div>
+        <div class="square s2"></div>
+
+        <script src="jquery-3.5.0.min.js"></script>
+        <script src="index.js"></script>
+    </body>
+</html>
+
+
+$(function main() {
+    setInterval(function () {
+        let s1 = $(".s1");
+        let s2 = $(".s2");
+        s1.removeClass("s1").addClass("s2");
+        s2.removeClass("s2").addClass("s1");
+    }, 1000);
+});
+
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            .ball {
+                width: 50px;
+                height: 50px;
+                border-radius: 25px;
+                background-color: blue;
+                position: absolute;
+                top: 200px;
+                left: 200px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="ball"></div>
+
+        <script src="jquery-3.5.0.min.js"></script>
+        <script src="index.js"></script>
+    </body>
+</html>
+
+
+$(function main() {
+    setInterval(function () {
+        let ball = $(".ball");
+        let top = parseInt(ball.css("top").slice(0, -2));
+        //let left = parseInt(ball.css("left").slice(0, -2));
+        top += 10; //left += 10;
+        ball.css("top", top + "px");
+        //ball.css("left", left + "px");
+    }, 1000/48);
+});
+
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h1>陈沛鑫</h1>
+        <button>点击我</button>
+
+        <script src="jquery-3.5.0.min.js"></script>
+        <script src="index.js"></script>
+    </body>
+</html>
+
+
+$(function main() {
+    $("button").on("click", function () {
+        let e = $("h1");
+
+        e.html("高博");
+
+        setTimeout(function () {
+            console.log("变身");
+            e.html("陈沛鑫");
+        }, 3000);
+    });
+});
+
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h1>列表项内容来自后端的响应</h1>
+        <ol id="content">
+        </ol>
+        <button>点击发送 AJAX 请求</button>
+
+        <script src="jquery-3.5.0.min.js"></script>
+        <script src="index.js"></script>
+    </body>
+</html>
+
+
+$(function main() {
+    $("button").on("click", function () {
+        $.get("test.txt", function (data) {
+            console.log(data);
+
+            let li = $("li");
+            li.html(data);
+            console.log(li);
+        });
+    });
+});
+

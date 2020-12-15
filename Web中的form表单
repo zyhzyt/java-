@@ -1,0 +1,299 @@
+package com.zyh.model;
+
+public class Message {
+    public int id;
+    public String who;
+    public String when;
+    public String what;
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "id=" + id +
+                ", who='" + who + '\'' +
+                ", when='" + when + '\'' +
+                ", what='" + what + '\'' +
+                '}';
+    }
+}
+
+
+package com.zyh.servlet;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.zyh.model.Message;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zyh.util.DBUtility;
+
+@WebServlet("/message-list.json")
+public class MessageListServlet extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        List<Message> messageList = getMessageList();
+
+        String jsonMessage = buildJSONByJackson(messageList);
+
+        resp.setCharacterEncoding("utf-8");
+        resp.setContentType("application/json");
+
+        PrintWriter writer = resp.getWriter();
+        writer.println(jsonMessage);
+    }
+
+
+    private String buildJSONByJackson(List<Message> messageList) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            return mapper.writeValueAsString(messageList);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();    // 不要随便吞异常
+            return "";
+        }
+    }
+
+    private List<Message> getMessageList() {
+        List<Message> messageList = new ArrayList<>();
+
+        try (Connection connection = DBUtility.getConnection()) {
+            String sql = "SELECT id, who, `when`, what FROM messages ORDER BY id DESC";
+            try (PreparedStatement s = connection.prepareStatement(sql)) {
+                try (ResultSet rs = s.executeQuery()) {
+                    while (rs.next()) {
+                        Message message = new Message();
+
+                        message.id = rs.getInt("id");
+                        message.who = rs.getString("who");
+                        message.when = rs.getString("when");
+                        message.what = rs.getString("what");
+
+                        messageList.add(message);
+                    }
+                    return messageList;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }}
+package com.zyh.servlet;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
+import java.io.*;
+
+@MultipartConfig
+@WebServlet("/post-file.api")
+public class PostFileServlet extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        req.setCharacterEncoding("utf-8");
+        resp.setCharacterEncoding("utf-8");
+
+        /*
+        Part usernamePart = req.getPart("username");
+        InputStream usernameIS = usernamePart.getInputStream();
+        Scanner s = new Scanner(usernameIS, "utf-8");
+        String next = s.next();
+        System.out.println(next);
+         */
+        /*
+        Reader usernameReader = new InputStreamReader(usernameIS, "UTF-8");
+        char[] buf = new char[(int)usernamePart.getSize()];
+        int n = usernameReader.read(buf);
+        String s = new String(buf, 0, n);
+        System.out.println(s);
+         */
+
+        //Part passwordPart = req.getPart("password");
+        Part imagePart = req.getPart("image");
+        InputStream inputStream = imagePart.getInputStream();
+        OutputStream outputStream = new FileOutputStream("D:\\课程\\2020-12-9-春招冲刺班-Web梳理JSON等\\例1\\target\\例1-1.0-SNAPSHOT\\dest.jpg");
+
+        byte[] buffer = new byte[1024];
+        while (true) {
+            int n = inputStream.read(buffer);
+            if (n == -1) {
+                break;
+            }
+            // buffer[0:n)
+            outputStream.write(buffer, 0, n);
+        }
+        outputStream.close();
+
+
+
+
+
+        /*
+        System.out.println(req.getParameter("username"));
+        System.out.println(req.getParameter("password"));
+        System.out.println(req.getParameter("image"));
+         */
+    }
+}
+
+
+
+package com.zyh.servlet;
+
+import com.zyh.util.DBUtility;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import static java.util.Locale.CHINA;
+
+@WebServlet("/post-message.api")
+public class PostMessageServlet extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        req.setCharacterEncoding("utf-8");
+        resp.setCharacterEncoding("utf-8");
+
+        String who = req.getParameter("who");
+        String what = req.getParameter("what");
+        // TODO: 没有做任何错误处理：没有填写信息就提交，就会 500
+
+        insertIntoMessage(who, what);
+
+        // 执行跳转
+        resp.sendRedirect("message-list.html");
+    }
+
+    private void insertIntoMessage(String who, String what) {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", CHINA);
+        Date now = new Date();
+        String nowStr = dateFormat.format(now);
+        System.out.println(nowStr);
+
+        try (Connection connection = DBUtility.getConnection()) {
+            String sql = "INSERT INTO message (who, `when`, what) VALUES (?, ?, ?)";
+            try (PreparedStatement s = connection.prepareStatement(sql)) {
+                s.setString(1, who);
+                s.setString(2, nowStr);
+                s.setString(3, what);
+
+                s.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+
+package com.zyh.util;
+
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+// TODO: 保留线程安全问题待处理
+public class DBUtility {
+    private static final DataSource dataSource;
+
+    static {
+        MysqlDataSource mysqlDataSource = new MysqlDataSource();
+
+        mysqlDataSource.setServerName("127.0.0.1");
+        mysqlDataSource.setPort(3306);
+        mysqlDataSource.setUser("root");
+        mysqlDataSource.setPassword("wdtdz123");
+        mysqlDataSource.setDatabaseName("db2020");
+        mysqlDataSource.setUseSSL(false);
+        mysqlDataSource.setCharacterEncoding("utf8");
+
+        dataSource = mysqlDataSource;
+    }
+
+    public static Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
+    }
+}
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>留言板</title>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>#ID</th>
+                <th>谁</th>
+                <th>何时</th>
+                <th>说了什么</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <form method="post" action="post-message.api">
+        <input type="text" name="who">
+        <input type="text" name="what">
+
+        <button>发布留言</button>
+    </form>
+
+
+    <script src="js/jquery-3.5.0.min.js"></script>
+    <script src="js/message-list.js"></script>
+
+
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="zh-hans">
+<head>
+    <meta charset="UTF-8">
+    <title>上传文件演示</title>
+</head>
+<body>
+    <form method="post" action="post-file.api" enctype="multipart/form-data">
+        <input type="file" name="image">
+        <button>提交</button>
+    </form>
+</body>
+</html>

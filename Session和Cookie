@@ -1,0 +1,102 @@
+package com.peixinchen;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/show-cookies")
+public class ShowCookieServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Cookie[] cookies = req.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                System.out.println(cookie.getName());
+                System.out.println(cookie.getValue());
+                System.out.println("========================");
+            }
+        }
+    }
+}
+
+
+package com.peixinchen;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/set-cookie")
+public class SetCookieServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // resp.setHeader("Set-Cookie", "k1=v1");  这个是最本质的方法，但不好用
+        Cookie cookie = new Cookie("k3", "v3");
+        cookie.setDomain("peixinchen.com");
+        cookie.setMaxAge(300);
+
+        Cookie cookie1 = new Cookie("k2", "v2");
+
+        resp.addCookie(cookie1);
+        resp.addCookie(cookie);
+    }
+}
+
+
+
+package com.peixinchen;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+
+@WebServlet("/profile")
+public class ProfileServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession(false);
+        if (session == null) {
+            System.out.println("应该让重新登录");
+            return;
+        }
+
+        String 姓名 = (String) session.getAttribute("姓名");
+        int 年龄 = (Integer)session.getAttribute("年龄");
+        System.out.println(姓名);
+        System.out.println(年龄);
+    }
+}
+
+
+package com.peixinchen;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.IOException;
+
+@WebServlet("/login.action")
+public class LoginActionServlet extends HttpServlet {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession();
+        session.setAttribute("姓名", "陈沛鑫");
+        session.setAttribute("年龄", 34);
+    }
+}
+

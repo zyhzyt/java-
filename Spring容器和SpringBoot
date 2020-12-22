@@ -1,0 +1,101 @@
+Core Container（核心容器）
+spring-core ,
+spring-beans ,
+这两个模块提供了整个Spring框架最基础的设施：IoC (Inversion of Control，控制反转) 和 DI (dependency injection，依赖注入)。
+    spring-context ,
+    spring-context-support 
+, and springexpression (Spring Expression Language)
+  
+  bean就是java对象，容器就是对java对象的整个周期
+ 
+
+
+控制反转IoC/依赖注入DI
+ 
+	IoC (Inversion of Control，控制反转) ，是面向对象编程中的一种设计原则，可以用来减低计算机代码 之间的耦合度
+作用：降低代码耦合度
+实现了IoC思想的容器就是IoC容器
+	DI 是实现IoC的方法之一。所谓依赖注入，就是由IOC容器在运行期间，动态地将某种依赖关系注入到对象之中
+两种注入方式：构造注入和Setter注入
+
+
+
+
+
+Spring容器使用流程
+启动容器                     加载配置文件（类加载路径下的beans.xml）
+根据配置完成Bean的初始化  
+
+注册Bean对象到容器中 
+装配Bean属性
+ 
+注册Bean
+注册Bean—在类上使用，当类被Spring扫描到，就会创建Bean对象并注册到容器中
+@Controller ：Web请求响应的处理，控制器层  完成请求数据的校验等操作
+@Service ：业务逻辑的服务层                    方法参数完成业务逻辑
+@Repository ：数据访问层                      关系型数据库的访问操作
+@Component ：一般的组件
+
+传统的三层架构设计：Controller， Service ，DAO（数据访问层）
+通过类型获取：这种获取方式要求该类型的Bean只能有一个 
+通过名称获取：同一个类型的Bean可以有多个
+
+2、@Bean在方法上，方法名作为Bean的id（名称）方法的返回值，作为注册到容器中的Bean对象，更灵活一点，可以手动设计属性
+
+3、@Configuration：表示配置类
+注：注册一个Bean对象的工厂类（实现Factory<T>接口），其实是注册getObject（）方法返回值对象到容器中
+
+面试问题：
+  Spring得到理解，Bean容器的理解，loc/DI的理解，
+BeanFactory和ApplicationContext区别（ApplicationContext 是 BeanFactory 的子接口。主要使用 ApplicationContext 应用上下文接口）
+  BeanFactory和FactoryBean区别
+
+注册定义Bean：面试问道，只回答两种
+1、	类上注解
+2、	方法上注解
+
+装配Bean：DI
+将容器中Bean对象，装配到某个Bean属性中（构造方法注入，Setter注入）
+
+面试题：
+  1、注册多个Bean对象：
+同类型的Bean有多个时，注入该类型Bean需要指定Bean的名称： 属性名或方法参数名设置为Bean的名称 属性名或方法参数设置 @Qualifier("名称") 注解，注解内的字符串是Bean对象的名称
+3、	装配Bean的注解
+ @Autowired是Spring提供的注解，只能在Spring框架中使用
+@Resources是JDK官方提供的注解，Spring的DI提供了该注解的实现
+
+依赖注入（依赖装配）
+ 第一种方式：属性注入
+ 第二种方式：构造方法注入
+
+
+Bean的作用域
+
+
+
+Bean的生命周期
+ 
+ 
+
+ 
+ 
+ 
+ 
+
+
+SpringBoot
+约定优于配置
+
+SpringBoot项目搭建
+1、	创建普通的maven项目
+2、	调整pom.xml文件：引入springboot相关依赖
+3、	Src/main/resources：
+  创建public，static文件，存放web静置
+  创建/application.properties，springboot默认的配置文件
+4、	创建启动类：必须写在某个包下，启动时自动扫描启动类所在包
+5、	 
+
+修改debug日志：application.properties文件中，添加
+6、 
+
+

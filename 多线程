@@ -1,0 +1,516 @@
+package 利用多线程同时进行冒泡排序;
+
+import java.util.Random;
+
+public class ThreadSort {
+    private static void bubbleSort(long[] array) {
+        for (int i = 0; i < array.length - 1; i++) {
+            for (int j = 0; j < array.length - i - 1; j++) {
+                if (array[j] > array[j + 1]) {
+                    long t = array[j];
+                    array[j] = array[j + 1];
+                    array[j + 1] = t;
+                }
+            }
+        }
+    }
+
+    private static final Random random = new Random(20201223);
+
+    private static long[] createRandomArray(int n) {
+        long[] array = new long[n];
+        for (int i = 0; i < n; i++) {
+            array[i] = random.nextInt(2 * n);
+        }
+        return array;
+    }
+
+    private static class SortThread extends Thread {
+        private final long[] array;
+
+        SortThread(long[] array) {
+            this.array = array;
+        }
+
+        @Override
+        public void run() {
+            bubbleSort(array);
+        }
+    }
+
+
+
+
+    private static void 多线程排序() throws InterruptedException {
+        long[] a1 = createRandomArray(4_0000);
+        long[] a2 = createRandomArray(4_0000);
+        long[] a3 = createRandomArray(4_0000);
+        long[] a4 = createRandomArray(4_0000);
+        long[] a5 = createRandomArray(4_0000);
+
+        System.out.println("开始排序");
+
+        long s = System.currentTimeMillis();
+
+        Thread t1 = new SortThread(a1);
+        Thread t2 = new SortThread(a2);
+        Thread t3 = new SortThread(a3);
+        Thread t4 = new SortThread(a4);
+
+        t1.start();
+        t2.start();
+        t3.start();
+        t4.start();
+
+        bubbleSort(a5);
+
+        t1.join();
+        t2.join();
+        t3.join();
+        t4.join();
+        long e = System.currentTimeMillis();
+
+        double sec = (e - s) / 1000.0;
+        System.out.printf("多线程：一共耗时 %f 秒\n", sec);
+    }
+
+
+
+
+    private static void 单线程排序() {
+        long[] a1 = createRandomArray(4_0000);
+        long[] a2 = createRandomArray(4_0000);
+        long[] a3 = createRandomArray(4_0000);
+        long[] a4 = createRandomArray(4_0000);
+        long[] a5 = createRandomArray(4_0000);
+
+        System.out.println("开始排序");
+        long s = System.currentTimeMillis();
+        bubbleSort(a1);
+        bubbleSort(a2);
+        bubbleSort(a3);
+        bubbleSort(a4);
+        bubbleSort(a5);
+        long e = System.currentTimeMillis();
+
+        double sec = (e - s) / 1000.0;
+        System.out.printf("单线程：一共耗时 %f 秒\n", sec);
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        多线程排序();
+    }
+
+
+}
+
+
+
+package 利用多线程算fib数列;
+
+import java.util.Scanner;
+
+public class Main {
+    // O(2^n)
+    private static long fib(int n) {
+        if (n < 2) {
+            return n;
+        }
+        return fib(n - 1) + fib(n - 2);
+    }
+
+    private static class MyThread extends Thread {
+        private final int n;
+
+        MyThread(int n) {
+            this.n = n;
+        }
+
+        @Override
+        public void run() {
+            System.out.println(fib(n));
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            int n = scanner.nextInt();
+            //System.out.println(fib(n));
+            Thread thread = new MyThread(n);
+            thread.start();
+        }
+    }
+}
+
+
+
+package 利用多线程算fib数列;
+
+import java.util.Scanner;
+
+public class Main {
+    // O(2^n)
+    private static long fib(int n) {
+        if (n < 2) {
+            return n;
+        }
+        return fib(n - 1) + fib(n - 2);
+    }
+
+    private static class MyThread extends Thread {
+        private final int n;
+
+        MyThread(int n) {
+            this.n = n;
+        }
+
+        @Override
+        public void run() {
+            System.out.println(fib(n));
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            int n = scanner.nextInt();
+            //System.out.println(fib(n));
+            Thread thread = new MyThread(n);
+            thread.start();
+        }
+    }
+}
+
+
+
+package 可见性;
+
+import java.util.Scanner;
+
+class 由于可见性出现的错误 {
+    private static volatile boolean status = true;
+
+    private static class SubThread extends Thread {
+        @Override
+        public void run() {
+            while (status);
+        }
+    }
+
+    public static void main(String[] args) {
+        Thread thread = new SubThread();
+        thread.start();
+
+        Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
+
+        status = false;
+    }
+}
+
+
+
+package 线程安全;
+
+public class 线程安全 {
+    private static int n = 1000;
+    private static class Add extends Thread {
+        @Override
+        public void run() {
+            for (int i = 0;i < n;i++) {
+                n++;
+            }
+        }
+    }
+    private static class Suber extends Thread {
+        @Override
+        public void run() {
+            for (int i = 0;i < n;i++) {
+                n--;
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread add = new Add();
+        Thread suber = new Suber();
+        add.start();
+        suber.start();
+        add.join();
+        suber.join();
+        System.out.println(n);
+    }
+
+
+
+}
+
+
+
+package 线程状态;
+
+public class 观察线程状态 {
+    public static void main(String[] args) {
+        Thread.State[] values = Thread.State.values();
+        for (Thread.State state : values) {
+            System.out.println(state);
+        }
+    }
+}
+
+
+
+package 观察栈帧;
+
+public class 栈帧 {
+    private static void a(){
+    }
+    private static void b(){
+        a();
+    }
+    private static void c(){
+        b();
+    }
+
+    public static void main(String[] args) {
+        c();
+    }
+
+
+}
+
+
+
+package 观察线程名称;
+
+public class 观察线程名称 {
+    private static class MyThread extends Thread{
+        MyThread(String name) {
+            super(name);
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Thread t1 = new MyThread("吴永攀");
+        Thread t2 = new MyThread("杨中旭");
+        Thread t3 = new MyThread("张勃华");
+        Thread t6 = new MyThread("苟和章");
+        t1.start();
+        t2.start();
+        t3.start();
+        t6.start();
+    }
+}
+
+
+
+
+package 重排序;
+
+public class 观察重排序 {
+    static int a1;
+    static int a2;
+    static int a3;
+    static int a4;
+    static int a5;
+    static int a6;
+    static int a7;
+    static int a8;
+    static int a9;
+    static int a10;
+    static int a11;
+
+    public static void main(String[] args) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println(a1);
+                System.out.println(a2);
+                System.out.println(a3);
+                System.out.println(a4);
+                System.out.println(a5);
+                System.out.println(a6);
+                System.out.println(a7);
+                System.out.println(a8);
+                System.out.println(a9);
+                System.out.println(a10);
+                System.out.println(a11);
+            }
+        }).start();
+
+        a1 = 1;
+        a2 = 2;
+        a3 = 3;
+        a4 = 4;
+        a5 = 5;
+        a6 = 6;
+        a7 = 7;
+        a8 = 8;
+        a9 = 9;
+        a10 = 10;
+        a11 = 11;
+    }
+}
+
+
+
+public class 为线程指定要运行的指令 {
+    static class MyThread extends Thread {
+        @Override
+        public void run() {
+            System.out.println("我是子线程");
+            while (true) {
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Thread thread = new MyThread();
+        thread.start();
+        //thread.run();
+        System.out.println("我是父线程");
+        while (true) {
+        }
+    }
+}
+
+
+
+public class 把Thread当Runnable使用 {
+    static class MyThread extends Thread {
+        @Override
+        public void run() {
+//            while (true){
+//                System.out.println("我是子线程");
+//            }
+            method("子线程");
+        }
+    }
+
+    public static void main(String[] args) {
+        Thread runnable = new MyThread();       // 代表作业
+        Thread thread = new Thread(runnable);   // 代表线程
+        thread.start();
+//        while (true) {
+//            System.out.println("我是主线程");
+//        }
+
+        method("主线程");
+    }
+
+    private static void method(String name) {
+        while (true) {
+            System.out.println("我是" + name);
+        }
+    }
+}
+
+
+
+public class 第一个我们自己创建的线程 {
+    public static void main(String[] args) {
+        Thread thread = new Thread(); // 新建状态
+        thread.start(); // 让新建的线程（子线程）的状态变成就绪状态
+    }
+}
+
+
+
+public class 观察一些线程的状态转移过程 {
+    public static void main(String[] args) throws InterruptedException {
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(10_000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        System.out.println(t.getState());
+        t.start();
+        System.out.println(t.getState());   // RUNNABLE or TIMED_WAITING
+        Thread.sleep(1);
+        System.out.println(t.getState());   // RUNNABLE or TIMED_WAITING
+        t.join();
+        System.out.println(t.getState());
+    }
+}
+
+
+public class 通知线程停止 {
+
+    private static class MyThread extends Thread{
+        @Override
+        public void run() {
+            System.out.println("苟和章出生了");
+            while (true) {
+                try {
+                    Thread.sleep(10 * 1000);
+                } catch (InterruptedException e) {
+                    break;
+                }
+
+                System.out.println("Hello World");
+                boolean 有人赐白绫 = Thread.interrupted();
+                if (有人赐白绫) {
+                    break;
+                }
+            }
+//            while (true){
+//                System.out.println("苟和章大sb");
+//                boolean 有人赐白绫 = Thread.interrupted();
+//                if (有人赐白绫) {
+//                    break;
+//                }
+//
+//            }
+        }
+
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread thread = new MyThread();
+        thread.start();
+        System.out.println("我是苟和章的主人");
+        Thread.sleep(3000);
+        thread.interrupt();
+
+    }
+}
+
+
+
+public class 通过Runnable启动线程 {
+    static class MyRunnable implements Runnable {
+        @Override
+        public void run() {
+            while (true) {
+                System.out.println("我是子线程");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Runnable runnable = new MyRunnable();
+        Thread thread = new Thread(runnable);
+        thread.start();
+
+        while (true) {
+            System.out.println("我是父线程");
+        }
+    }
+}

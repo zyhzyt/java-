@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>首页</title>
+</head>
+<body>
+
+</body>
+</html>
+ 
+ 
+ 
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用户登录</title>
+    <script src="js/jquery@3.3.1/jquery.js" type="text/javascript"></script>
+    <script src="js/login.js" type="text/javascript"></script>
+</head>
+<body>
+<h4>用户登录</h4>
+<form id="login_form" method="post">
+    用户名：<input type="text" name="username" placeholder="请输入用户名">
+    <br><br>
+    密码：<input type="password" name="password" placeholder="请输入密码">
+    <br><br>
+    <input type="submit" value="登录">
+</form>
+</body>
+</html> 
+ 
+ 
+ 
+
+
+$(function () {//html页面加载完执行方法
+    $("#login_form").submit(function () {//绑定表单的提交事件
+
+        // alert("submit")//验证
+        $.ajax({
+            url: "data/login.json",
+            type: "get",//请求方法
+            // dataType: "x-www-form-urlencoded",//请求数据类型：Content-Type
+            data: $("#login_form").serialize(),//请求数据：使用表单的数据
+            contentType: "json",//响应数据类型：Content-Type
+            success: function (resp) {
+                alert(JSON.stringify(resp))//提示框：json对象转为字符串
+            }
+        })
+        return false;//返回值决定是否使用表单默认提交
+    })
+}){
+  "success": true,
+  "data": null
+}package org.example;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}

@@ -1,0 +1,59 @@
+HTML中为button绑定事件的方式有三种。
+
+例如以下标签：
+
+<button type="submit" id="btn_submit"> submit </button>
+
+一、使用jQuery进行绑定
+
+$('#btn_submit').click(function(){
+
+});
+
+
+
+二、使用原生js绑定
+
+document.getElementById("#btn_submit").addEventListener(‘click’, function(){
+
+}, false);
+
+
+
+三、直接在button标签中使用onclick绑定
+
+<button type="submit" id="btn_submit" οnclick="btnAction()"> submit </button>
+
+然后在<script>标签中定义btnAtion的方法
+
+
+<script>
+        function btnAction()
+        { }
+</script>
+
+
+
+比较：
+
+1、使用jquery绑定，代码简洁，使用方便，事件绑定方式为追加绑定，即绑定多少个方法就执行多少个方法。
+
+在单一绑定的条件下，由于jQuery底层其实也是js实现，所以速度区别并不大。至少“绑定”这个环节并不会成为
+
+速度的瓶颈，除非页面上绑定事件的元素超过上万个，否则响应速度就不必纠结了，只做个事件绑定还是很快的。
+
+所以在做负载等要求不那么严格的“小程序”，从维护的角度上，建议用jQuery绑定，简单清楚，最容易维护。
+
+2、使用原生js，代码量稍大，事件绑定方式为复写绑定，即绑定多个只保留最后一个绑定的方法。
+
+原生js，这是真正的熟练者的工具，如果能写明白更好。
+
+3、使用onclick标签绑定，代码量不大，但是html前端和js前端混在一起，不易于维护。
+
+原则上HTML代码只能体现网页的结构，具体的行为应该使用JavaScript代码进行绑定。
+
+如果在HTML中用onclick事件混杂js，会导致html前端和js前端的工作混在了一起，难以分离工作任务，
+
+进而难以维护。这种做法临时调试可以，但如果正式成品中不应该出现，
+
+所以不建议使用onclick标签方式进行绑定事件。

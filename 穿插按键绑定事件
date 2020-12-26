@@ -1,0 +1,89 @@
+穿插按键绑定事件
+ 
+新增按钮实行跳转页面，修改和新增公用一个页面
+实例：
+
+    <input type="button" value="新增" onclick="addArticle()" />
+
+<script>
+    function addArticle(){
+        //alert("add article")
+//新增按钮的跳转
+        window.location.href="article.html?type=add";
+    }
+    function modifyArticle(id){
+        //alert("modify article id="+id)
+     //修改按钮的跳转window.location.href="article.html?type=modify&id="+id;
+
+    }
+    function deleteArticle(id){
+        //alert("delete article id="+id)
+    }
+    $(function () {
+        $.ajax({
+            url:"../data/article_list.json",
+            contentType: "json",//响应数据类型：Content-Type
+            success:function (resp) {
+                //alert(JSON.stringify(resp))
+                if (resp.success){
+                    let data = resp.data;
+                    let content = "";
+          //新增按钮只需要一个，修改和删除和文章进行绑定     //content拼接的内容加上按钮，需要根据id绑定事件，事件中做ajax请求
+                    for (let i in data) {
+                        content +=  "<li>"
+                        content +=        data[i].title;
+                        content +=      "<input type='button' value='修改' onclick='modifyArticle("+data[i].id+")' />";
+                        content +=      "<input type='button' value='删除' onclick='deleteArticle("+data[i].id+")' />";
+                        content +=  "</li>";
+                    }
+                    $("#article_list").html(content)
+                } else{
+                    alert("错误码："+resp.code+"\n错误信息："+resp.message)
+                }
+            },
+            error:function (req,textStatus,err) {
+                if (err != undefined && err != null) {//这两个是不等的数据类型
+                    alert(err)
+                }else {
+                    alert(req.status)
+                }
+            }
+        });
+    })
+</script>
+
+
+
+
+
+
+
+
+let content = "";
+                        //新增按钮只需要一个，修改和删除和文章进行绑定
+                        //content拼接的内容加上按钮，需要根据id绑定事件，事件中做ajax请求
+                        for (let i in data) {
+                            content +=  "<li>"
+                            content +=        data[i].title;
+                            content +=      "<input type='button' value='修改' onclick='modifyArticle("+data[i].id+")' />";
+                            content +=      "<input type='button' value='删除' onclick='deleteArticle("+data[i].id+")' />";
+                            content +=  "</li>";
+                        }
+
+
+
+//按键绑定跳转
+
+function addArticle(){
+            //alert("add article")
+            window.location.href="article.html?type=add";
+        }
+        function modifyArticle(id){
+            //alert("modify article id="+id)
+            window.location.href="article.html?type=modify&id="+id;
+
+        }
+
+
+
+

@@ -1,0 +1,58 @@
+SpringMVC
+ 
+ 
+ 
+ 
+
+SpringMVC框架围绕 DispatcherServlet（前端控制器） 这个核心展开， DispatcherServlet 是 SpringMVC框架的总导演、总策划，它负责截获请求并将其分派给相应的处理器处理
+MVC（Model View Controller）是软件工程中的一种软件架构模式，它把软件系统分为模型、视图和控制器三个基本部分
+ 
+
+Model（模型）是应用程序中用于处理应用程序数据逻辑的部分。 通常模型对象负责在数据库中存取数据。
+View（视图）是应用程序中处理数据显示的部分。通常视图是依据模型数据创建的。 
+Controller（控制器）是应用程序中处理用户交互的部分。
+
+
+SpringMVC实战
+	@Controller
+ @Controller注解标注是一个类是Web控制器，其和@Component注解等价，只不过在Web层使用，其 便于区分类的作用
+
+	@RequestMapping
+ @RequestMapping是Spring Web应用程序中最常被用到的注解之一。 在对SpringMVC进行配置的时候，需要指定请求与处理方法之间的映射关系，这时候就需要使用 
+@RequestMapping注解。该注解可以在控制器类的级别和其方法级别上使用。
+
+控制器方法的返回
+String返回类型
+1.	返回 URI 资源路径的字符串，可以使用 redirect:/服务路径 表示重定向到某个路径， forward:/服务路径 表示转发到某个路径，如果前边不写默认就是转发。
+2.	@RequestMapping结合@ResponseBody，返回的字符串会作为响应体内容。此时响应的 Content-Type为 text/plain 普通文本
+返回普通的Java类型
+	返回类型为Object，一般使用带Getter，Setter方法的模型类 
+	结合@ResponseBody使用，表示将对象序列化后的数据放在响应体返回 
+	在SpringBoot中默认响应的Content-Type为 application/json 
+	非字符串对象会自动序列化为 json 字符串
+
+返回ResponseEntity（了解）
+return ResponseEntity.status(200).body(map);
+
+	@ResponseBody
+表示将控制器方法的返回序列化作为响应体内容返回前端
+1. 返回类型为String，表示响应Content-Type: text/plain，且响应体为控制器方法的字符串返回值 
+2. 返回类型为普通Java类型，表示响应Content-Type: application/json，以返回对象序列化为json后 作为响应体。
+3. @ResponseBody可以使用在类上，表示该类中所有方法都是默认以返回值作为响应体，也就是所有方法都使用@ResponseBody。 
+注意：如果返回值为null，表示响应体内容为空
+返回类型为自定义
+
+
+
+	组合注解
+可以使用组合注解来完成同时定义多个注解的效果，如：@RestController，@GetMapping， @PostMapping 以下为@RestController注解申明：
+@Target(ElementType.TYPE) 
+@Retention(RetentionPolicy.RUNTIME) 
+@Documented
+@Controller 
+@ResponseBody
+ public @interface RestController {
+说明该注解使用在类上，和使用两个注解@Controller，@ResponseBody在类上意思一样同理： @GetMapping即是：@RequestMapping(method = RequestMethod.GET) 
+@PostMapping即是：@RequestMapping(method = RequestMethod.POST)
+
+

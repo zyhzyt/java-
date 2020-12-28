@@ -1,0 +1,290 @@
+debug=true
+# 设置打印日志的级别，及打印sql语句
+#日志级别：trace,debug,info,warn,error
+#基本日志
+logging.level.root=INFO
+#扫描的包：druid.sql.Statement类和frank包
+logging.level.druid.sql.Statement=ERROR
+
+logging.level.org.example=DEBUG
+
+# 美化JSON数据格式
+spring.jackson.serialization.indent-output=true
+
+# 设置JSON数据的日期格式
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.time-zone=GMT+8
+
+# JSON数据属性为null时不返回
+spring.jackson.default-property-inclusion=non_null
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>主页</title>
+</head>
+<body>
+<p>进入主页啦</p>
+</body>
+</html>
+
+
+
+package org.example;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+}
+
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+@Setter
+@Getter
+@ToString
+public class JSONResponse {
+    private boolean success;
+    private String code;
+    private String message;
+    private Object data;
+}
+
+
+package org.example.controller;
+
+
+import org.example.model.JSONResponse;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+@Controller
+@RequestMapping("/text")
+public class TestController {
+
+    @RequestMapping("/1")
+    public String test1(){
+        return "forword:/home.html";
+    }
+    @RequestMapping("/2")
+    public String test2(){
+        //重定向：2次请求，url会变，响应3xx+location
+        return "redirect:/home.html";
+    }
+    @RequestMapping("/3")
+    @ResponseBody
+    public String test3(){
+        return "好了，已经知道了";
+    }
+
+    @RequestMapping("/4")
+    @ResponseBody
+    public Object test4(){
+        Map<Integer, String> map = new HashMap<>();
+        map.put(1, "张三");
+        map.put(2, "李四");
+        map.put(3, "王五");
+        return map;
+    }
+
+    @RequestMapping("/5")
+    @ResponseBody
+    public Object test5(){
+        Map<String, String> map = new HashMap<>();
+        map.put("success", "true");
+        map.put("data","null");
+
+        return map;
+    }
+
+    @RequestMapping("/5_1")
+    @ResponseBody
+    public Object test5_1(){
+        JSONResponse resp = new JSONResponse();
+        resp.setCode("LOG001");
+        resp.setMessage("没有");
+        resp.setData(new Date());
+        return resp;
+    }
+
+    @RequestMapping("/6")
+    public ResponseEntity test6(){
+        Map<Integer, String> map = new HashMap<>();
+        map.put(1, "张三");
+        map.put(2, "李四");
+        map.put(3, "王五");
+        return ResponseEntity.status(200).body(map);
+    }
+
+
+
+
+
+}
+
+
+
+package org.example.controller;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+
+@Controller
+public class Test2Controller {
+
+    @RequestMapping("/test2")
+    public String test(){
+        return "redirect:/home.html";
+    }
+
+}
+
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 默认使用的Spring Framework版本为5.2.10.RELEASE -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.3.5.RELEASE</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>org.example</groupId>
+    <artifactId>springMVC</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <java.version>1.8</java.version>
+    </properties>
+
+    <dependencies>
+
+        <!-- spring-boot-starter-web: 基于SpringBoot开发的依赖包，
+                                 会再次依赖spring-framework中基本依赖包，aop相关依赖包，web相关依赖包，
+                                 还会引入其他如json，tomcat，validation等依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <!-- 排除tomcat依赖 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+
+        <!-- 添加 Undertow 依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
+        </dependency>
+
+        <!--引入AOP依赖-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- spring-boot-devtools: SpringBoot的热部署依赖包 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <!-- 不能被其它模块继承，如果多个子模块可以去掉 -->
+            <optional>true</optional>
+        </dependency>
+
+        <!-- lombok: 简化bean代码的框架 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- spring-boot-starter-test: SpringBoot测试框架 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- SpringBoot的maven打包插件 -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- 明确指定一些插件的版本，以免受到 maven 版本的影响 -->
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.3</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

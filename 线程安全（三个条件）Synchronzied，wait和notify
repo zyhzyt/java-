@@ -1,0 +1,278 @@
+ 
+
+
+原子性
+ 
+ 
+
+
+
+
+内存可见性
+ 
+代码重排序
+ 
+线程不安全：运行结果和预期结果之间出现概率性
+概率性的来源：线程切换的随机性
+经过三个条件的放大：原子性/内存可见性/代码重排序
+
+代码实践
+ 
+ArrayList
+ 
+
+如何设计代码，进而使得代码具备线程安全问题
+ 
+
+思考：
+1.	线程安全是什么？
+2.	随机性来自何处？
+3.	随机性如何传递出来？
+4.	JVM内存区域划分的共享和私有？
+实践：
+a)	哪些情况需要写多线程代码？
+b)	写了多线程之后，哪里出现线程安全的风险了？
+c)	如何对风险进行保护？
+
+
+
+
+
+
+
+
+
+锁机制 
+原子性+可见性+代码重排序起到一定的保护
+ 
+
+Synchronzied关键字
+
+ 
+ 
+ 
+ 
+Synchronzied关键子的作用
+ 
+ 
+ 
+
+Volatile的不稳定机制
+ 
+Volatile Person p；
+P = new Person（…）； 可以保证一定是1->2->3的顺序
+
+
+
+
+单例模式
+ 
+ 
+阻塞队列
+ 
+线程通信
+ 
+Wait如果有多个，notify会唤醒随机的一个线程（不保证哪一个）
+                Notifyall把所有的都叫醒
+ 
+
+ 
+ 
+ 
+
+public class 获取反射类引用 {
+    static class Person {}
+
+    public static void main(String[] args) {
+        Person p1 = new Person();
+        Person p2 = new Person();
+
+        // 通过对象引用获取反射类对象引用
+        Class<? extends Person> c1 = p1.getClass();
+        Class<? extends Person> c2 = p2.getClass();
+
+        // 通过类名获取反射类对象引用
+        Class<Person> c3 = Person.class;
+
+        System.out.println(c1 == c2);
+        System.out.println(c1 == c3);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+public class 修复之前的线程安全问题 {
+    private static final int COUNT = 100_0000;
+    private static int n = 0;
+    private static Object lock = new Object();
+
+    static class Adder extends Thread {
+        @Override
+        public void run() {
+            synchronized (lock) {
+                for (int i = 0; i < COUNT; i++) {
+                    n++;
+                }
+            }
+        }
+    }
+
+    static class Suber extends Thread {
+        @Override
+        public void run() {
+            synchronized (lock) {
+                for (int i = 0; i < COUNT; i++) {
+                    n--;
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread t1 = new Adder();
+        Thread t2 = new Suber();
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        System.out.println(n);
+    }
+}
+
+
+
+public class Synchronized的语法使用示例 {
+    // 同步方法
+    synchronized int add(int a, int b) {
+        return 0;
+    }
+
+    synchronized static void sayHello() {
+    }
+
+    // 同步代码块 —— 能出现语句的地方
+    static void someMethod() {
+        Object object = new Object();
+        synchronized (object) {
+
+        }
+    }
+}
+
+
+
+package 单例模型;
+
+// 线程安全 + 简单
+// 构造的早，如果不用，就浪费空间了
+public class Hungry {
+    private Hungry() {}
+    
+    private static Hungry instance = new Hungry();  // 只会有这么一个对象
+    
+    public static Hungry getInstance() {
+        return instance;
+    }
+}
+
+
+
+package 单例模型;
+
+// 不是线程安全的
+public class LazyVersion1 {
+    private static LazyVersion1 instance = null;
+
+    public static LazyVersion1 getInstance() {
+        // 有人要用到该对象了
+        if (instance == null) {
+            // 第一次的时候，进行实例化，以后不再进行
+            instance = new LazyVersion1();
+        }
+
+        return instance;
+    }
+}
+
+
+package 单例模型;
+
+// 线程安全了
+// 性能不高
+public class LazyVersion2 {
+    private static LazyVersion2 instance = null;
+
+    public static LazyVersion2 getInstance() {
+        synchronized (LazyVersion2.class) {
+            if (instance == null) {
+                instance = new LazyVersion2();
+            }
+        }
+
+        return instance;
+    }
+}
+
+
+
+package 单例模型;
+
+// 1. 为什么要二次判断
+// 2. 性能是怎么提高的
+// 3. instance = new LazyVersion3() 可能会被重排序成  1 ->  3  ->  2
+public class LazyVersion3 {
+    private static LazyVersion3 instance = null;
+
+    public static LazyVersion3 getInstance() {
+        if (instance == null) {
+            // 100年的1秒
+            synchronized (LazyVersion3.class) {
+                // 能 保证 instance 还是 null
+                if (instance == null) {
+                    instance = new LazyVersion3();
+                }
+            }
+        }
+
+        return instance;
+    }
+}
+
+
+
+package 单例模型;
+
+// 1. 为什么要二次判断
+// 2. 性能是怎么提高的
+public class LazyVersion4 {
+    // volatile 的目的：
+    // 保护 instance = new LazyVersion4(); 一定是 1 -> 2 -> 3 的顺序
+    // 而不至于出现，其他线程看到 instance != null，但执行的是一个没有被初始化完的对象。
+    private static volatile LazyVersion4 instance = null;
+
+    public static LazyVersion4 getInstance() {
+        if (instance == null) {
+            // 100年的1秒
+            synchronized (LazyVersion4.class) {
+                // 能 保证 instance 还是 null
+                if (instance == null) {
+                    instance = new LazyVersion4();
+                }
+            }
+        }
+
+        return instance;
+    }
+}

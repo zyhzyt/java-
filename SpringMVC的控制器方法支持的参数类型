@@ -1,0 +1,248 @@
+控制器方法支持的参数类型
+首先定义一个控制器，使用@RestController，根据方法返回值类型，返回字符串网页，或是 json 序列 化对象：
+package org.example.demo.controller; 
+import org.springframework.web.bind.annotation.RequestMapping; 
+Import org.springframework.web.bind.annotation.RestController; 
+@RestController 
+@RequestMapping("/arg")
+ public class TestArgumentsController { }
+
+ 
+该控制器中定义的请求映射方法
+@PathVariable
+@GetMapping("/owners/{ownerId}/pets/{petId}") 
+public String findPet(@PathVariable Long ownerId, @PathVariable Long petId) { 
+   return "主人id："+ownerId+", 宠物id："+petId; 
+} 
+说明：
+	{}是将服务路径 URI 中的部分定义为变量，之后在方法参数中获取该路径变量。更多格式可参考 URI格式。
+	请求 /arg/owners/1/pets/2 ，显示的网页内容为： 主人id：1, 宠物id：2 。
+	变量已经定义了为Long长整形，所以不能转换为Long的 URI 都会报错，如请求 /arg/owners/abc/pets/2 就会报错，响应状态码400。
+	变量名ownerId，petId必须和 URI 中的定义名称一致。
+
+@RequestParam
+请求数据要绑定到某个简单对象
+	URL 中的请求数据queryString 
+	请求头，Content-Type为表单默认提交的格式 application/x-www-form-urlencoded ，请求体中 的数据 
+	请求头，Content-Type为 multipart/form-data ，请求体中的数据。 form-data 可以提交文本 数据，也可以提交二进制文件。 
+以上简单对象包括：基本数据类型、包装类型、MultipartFile（接收二进制文件）
+注：@RequestParam注解参数默认为 required=true ，如果不传该参数就会报错，需要指定 为： @RequestParam(required = false)
+示例一
+通过 post 请求，请求数据的键分别为 username 和 password ，指定为queryString，或 Content-Type为表单数据类型， form-data 都可以
+@PostMapping("/login")
+public Object login(@RequestParam String username, @RequestParam String password){
+    log.debug("获取到请求路径参数：username={}, password={}", username, password);
+    Map<String, Object> map = new HashMap<>();
+    map.put("ok", true);
+    return map;
+}
+
+示例二：通过 post 请求，请求数据的键为 count ，指定为非必须输入。
+@PostMapping("/param2") 
+public Object param2(@RequestParam(required = false) Integer count){  
+  Map map = new HashMap<>();   
+  map.put("count", count);   
+ return map;
+ }
+注：
+	注意以上代码使用包装类型 Integer ，如果使用 int ，不传入键为 count 的请求数据就会报错，因为 null 无法转换为 int。
+	必填的请求数据可以使用基本数据类型，可以不传的参数，都要使用包装类型。
+示例三：
+通过 post 请求，使用 form-data 提交一个键为 file 的二进制文件，需要注意整个请求数据 大小不能超过10m，单个文件大小不超过1m。（这是 SpringBoot 的默认设置，修改需要通过 src/main/resources/application.properties 文件配置）
+@PostMapping("/register")
+public Object register(@RequestParam String username,
+                       @RequestParam String password,
+                       @RequestParam MultipartFile file) throws IOException {
+    log.debug("获取到请求路径参数：username={}, password={}", username, password);
+    log.debug("头像信息，名称={}, 内容={}", file.getOriginalFilename(),
+            new String(file.getBytes()));
+    Map<String, Object> map = new HashMap<>();
+    map.put("ok", true);
+    return map;
+}
+
+POJO对象
+POJO（Plain Ordinary Java Object）：简单的 java 对象，实际就是属性提供了Getter，Setter方法的 普通对象。 使用 java 对象和使用@RequestParam注解非常类似，只是有点细节不同：
+	@RequestParam是以方法参数变量名和传入的键对应，POJO对象作为方法参数时，是以POJO对 象中的属性名对应传入的键
+	@RequestParam默认必须传入该请求数据，而 POJO 对象是根据请求数据来填充属性，如果请求 数据没有，则属性就是默认值（new对象时每个属性的默认值）
+示例一：简单的包装类型，和使用@RequestParam结果一样
+@PostMapping("/login/pojo1")
+public Object loginPojo1(String username, String password){
+    log.debug("获取到请求路径参数：username={}, password={}", username, password);
+    Map<String, Object> map = new HashMap<>();
+    map.put("ok", true);
+    return map;
+}
+示例二：使用自定义 POJO 类，通过SpringMVC框架自动解析请求数据并设置到对象中。
+//springmvc自动实例化user对象，根据请求key获取值，注入到user对象的属性中
+ @PostMapping("/login/pojo2")
+   public Object loginPojo2(User user){
+    log.debug("获取到请求路径参数：username={}, password={}",
+            user.getUsername(), user.getPassword());
+    Map<String, Object> map = new HashMap<>();
+    map.put("ok", true);
+    return map;
+}
+示例三：POJO 对象同样可以直接获取 form-data 方式的数据，包括二进制文件
+@PostMapping("/register/pojo")
+public Object register(User user,
+                       MultipartFile file) throws IOException {
+    log.debug("获取到请求路径参数：username={}, password={}",
+            user.getUsername(), user.getPassword());
+    log.debug("头像信息，名称={}, 内容={}", file.getOriginalFilename(),
+            new String(file.getBytes()));
+    Map<String, Object> map = new HashMap<>();
+    map.put("ok", true);
+    return map;
+}
+
+@RequestBody
+当请求的数据类型Content-Type为 application/json 时，需要显示的使用@RequestBody注解。
+@PostMapping("/json")
+public Object json(@RequestBody User user){
+    log.debug("用户信息为：{}", user);
+    Map<String, Object> map = new HashMap<>();
+    map.put("ok", true);
+    return map;
+}
+
+@RequestPart
+对于请求的数据类型Content-Type为 multipart/form-data 时，二进制文件除了以上 @RequestParam和 POJO 对象的方式外，还可以使用@RequestPart。
+@PostMapping("/file")
+public Object file(@RequestPart MultipartFile file) throws IOException {
+    log.debug("头像信息，名称={}, 内容={}", file.getOriginalFilename(),
+            new String(file.getBytes()));
+    Map<String, Object> map = new HashMap<>();
+    map.put("ok", true);
+    return map;
+}
+
+
+Servlet API
+在控制器方法参数中，可以使用Servlet相关API，SpringMVC会自动将相关Servlet对象装配到方法参数 中，如 HttpServletRequest 、 HttpServletResponse 、 HttpSession 等。
+
+
+package org.example.controller;
+
+import org.example.model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/arg")
+public class TestArgumentController {
+
+    private static final Logger log = LoggerFactory.getLogger(TestArgumentController.class);
+    @GetMapping("/holiday/{day}")
+    public Object holiday(@PathVariable String day){
+        log.debug("获取到请求路径参数："+day);
+        Map<String, Object> map = new HashMap<>();
+        map.put("苟和章", true);
+        return map;
+    }
+    @PostMapping("/login")
+    public Object login(@RequestParam String username, @RequestParam String password){
+        log.debug("获取到请求路径参数：username={}, password={}", username, password);
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+    @PostMapping("/login2")//完成代码及测试，Integer改为int，重新测试
+//    public Object login2(@RequestParam(required = false) Integer i){
+    public Object login2(@RequestParam(required = false) int i){
+        log.debug("获取到请求路径参数：i="+i);
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+
+    @PostMapping("/register")
+    public Object register(@RequestParam String username,
+                           @RequestParam String password,
+                           @RequestParam MultipartFile file) throws IOException {
+        log.debug("获取到请求路径参数：username={}, password={}", username, password);
+        log.debug("头像信息，名称={}, 内容={}", file.getOriginalFilename(),
+                new String(file.getBytes()));
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+    @PostMapping("/login/pojo1")
+    public Object loginPojo1(String username, String password){
+        log.debug("获取到请求路径参数：username={}, password={}", username, password);
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+    //springmvc自动实例化user对象，根据请求key获取值，注入到user对象的属性中
+    @PostMapping("/login/pojo2")
+    public Object loginPojo2(User user){
+        log.debug("获取到请求路径参数：username={}, password={}",
+                user.getUsername(), user.getPassword());
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+    @PostMapping("/register/pojo")
+    public Object register(User user,
+                           MultipartFile file) throws IOException {
+        log.debug("获取到请求路径参数：username={}, password={}",
+                user.getUsername(), user.getPassword());
+        log.debug("头像信息，名称={}, 内容={}", file.getOriginalFilename(),
+                new String(file.getBytes()));
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+    @PostMapping("/json")
+    public Object json(@RequestBody User user){
+        log.debug("用户信息为：{}", user);
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+    @PostMapping("/file")
+    public Object file(@RequestPart MultipartFile file) throws IOException {
+        log.debug("头像信息，名称={}, 内容={}", file.getOriginalFilename(),
+                new String(file.getBytes()));
+        Map<String, Object> map = new HashMap<>();
+        map.put("ok", true);
+        return map;
+    }
+
+
+
+
+
+}
+
+
+
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@ToString
+public class User {
+    private String username;
+    private String password;
+}

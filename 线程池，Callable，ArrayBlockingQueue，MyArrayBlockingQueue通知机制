@@ -1,0 +1,241 @@
+package com.peixinchen;
+
+import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+
+public class 线程池演示 {
+    static class MyRunnable implements Runnable {
+        @Override
+        public void run() {
+            for (int i = 0; i < 100000000; i++) {
+                System.out.println("Hello");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+                10,
+                10,
+                10,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<Runnable>(10),
+                new ThreadFactory() {
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "Hello");
+                    }
+                }
+        );
+        ExecutorService executorService = threadPoolExecutor;
+        Executor executor = threadPoolExecutor;
+
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("hello");
+            }
+        });
+
+//        executor.execute(new MyRunnable());
+//
+//        for (int i = 0; i < 100000000; i++) {
+//            System.out.println("World");
+//        }
+
+        executorService.shutdown();
+    }
+}
+
+
+
+package com.peixinchen;
+
+import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+
+public class 使用Callable {
+    static class MyCallable implements Callable<Integer> {
+        private final int a;
+        private final int b;
+
+        MyCallable(int a, int b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        @Override
+        public Integer call() throws Exception {
+            Thread.sleep(10_000);
+            return a + b;
+        }
+    }
+
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+                10,
+                10,
+                10,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<Runnable>(10)
+        );
+        ExecutorService executorService = threadPoolExecutor;
+        Executor executor = threadPoolExecutor;
+
+        Future<Integer> future = executorService.submit(new MyCallable(10, 20));
+
+        System.out.println("Hello");
+        Integer r = future.get();
+        System.out.println("World");
+        System.out.println(r);
+
+    }
+}
+
+
+
+package com.peixinchen;
+
+import java.util.concurrent.ArrayBlockingQueue;
+
+public class QueueDemo {
+    static ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>(10);
+
+    static class 生产者 extends Thread {
+        @Override
+        public void run() {
+            setName("生产者");
+            while (true) {
+                try {
+                    queue.put(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    static class 消费者 extends Thread {
+        @Override
+        public void run() {
+            setName("消费者");
+            while (true) {
+                try {
+                    queue.take();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        for (int i = 0; i < 1; i++) {
+            Thread t = new 生产者();
+            t.start();
+        }
+
+        for (int i = 0; i < 50; i++) {
+            Thread t = new 消费者();
+            t.start();
+        }
+    }
+}
+
+
+
+package com.peixinchen;
+
+// 线程安全问题 OK
+// 通知机制
+public class MyArrayBlockingQueue {
+    private final Integer[] array = new Integer[5];
+    private int size = 0;
+    private int headIndex = 0;  // 队列中第一个元素所在下标
+    private int rearIndex = 0;  // 队尾中，下一个可以放入元素的下标
+
+    // synchronized 修饰方法，视为对 this 加锁
+    public synchronized boolean offer(Integer e) throws InterruptedException {
+        // 临界区开始
+        while (size >= array.length) {
+            wait();
+        }
+
+        // size 一定小于 array.length
+
+        array[rearIndex] = e;
+        rearIndex++;
+        if (rearIndex == array.length) {
+            rearIndex = 0;
+        }
+        size++;
+        // 临界区结束
+
+        notify();
+        return true;
+    }
+
+    public synchronized Integer poll() throws InterruptedException {
+        while (size <= 0) {
+            wait();
+        }
+        // size 一定大于 0
+
+        Integer e = array[headIndex];
+        headIndex++;
+        if (headIndex == array.length) {
+            headIndex = 0;
+        }
+        size--;
+        notify();       // 无法做精准唤醒
+
+        return e;
+    }
+}
+
+
+
+package com.peixinchen;
+
+// juc
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+public class Java中存在的几种阻塞队列 {
+    public static void main(String[] args) {
+        BlockingQueue<String> queue = null;
+    }
+}
+
+
+
+package com.peixinchen;
+
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+public class DBUtil {
+    // 单例模式
+    // volatile
+    private static volatile DataSource dataSource;
+
+    public static Connection getConnection() throws SQLException {
+        if (dataSource == null) {
+            synchronized (DBUtil.class) {
+                if (dataSource == null) {
+                    MysqlDataSource mysqlDataSource = new MysqlDataSource();
+
+                    mysqlDataSource.setServerName("127.0.0.1");
+                    mysqlDataSource.setPort(3306);
+
+                    dataSource = mysqlDataSource;
+                }
+            }
+        }
+
+        return dataSource.getConnection();
+    }
+}

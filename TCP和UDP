@@ -1,0 +1,136 @@
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+UDP协议
+UDP的特点
+无连接: 知道对端的IP和端口号就直接进行传输, 不需要建立连接; 
+不可靠: 没有确认机制, 没有重传机制; 如果因为网络故障该段无法发到对方, UDP协议层也不会给应用层返 回任何错误信息; 
+面向数据报: 不能够灵活的控制读写数据的次数和数量
+ 
+ 
+
+ 
+ 
+
+注意：UDP协议首部中有一个16位的最大长度. 也就是说一个UDP能传输的数据最大长度是64K(包含UDP首部). 如果我们需要传输的数据超过64K, 就需要在应用层手动的分包, 多次发送, 并在接收端手动拼装;
+
+基于UDP的应用层协议 
+	NFS: 网络文件系统 TFTP: 简单文件传输协议 
+	DHCP: 动态主机配置协议 
+	BOOTP: 启动协议(用于无盘设备启动) 
+	DNS: 域名解析协议 
+	自己写UDP程序时自定义的应用层协议
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+TCP:"传输控制协议(Transmission Control Protocol")
+ 
+
+ 
+源/目的端口号: 表示数据是从哪个进程来, 到哪个进程去; 
+32位序号/32位确认号: 后面详细讲; 
+4位TCP报头长度: 表示该TCP头部有多少个32位bit(有多少个4字节); 所以TCP头部最大长度是15 * 4 = 60 6位标志位: URG: 紧急指针是否有效 
+ACK: 确认号是否有效 
+PSH: 提示接收端应用程序立刻从TCP缓冲区把数据读走 
+RST: 对方要求重新建立连接; 我们把携带RST标识的称为复位报文段 
+SYN: 请求建立连接; 我们把携带SYN标识的称为同步报文段 
+FIN: 通知对方, 本端要关闭了, 我们称携带FIN标识的为结束报文段 
+16位窗口大小: 后面再说 
+16位校验和: 发送端填充, CRC校验. 接收端校验不通过, 则认为数据有问题. 此处的检验和不光包含TCP首部, 也 包含TCP数据部分.
+16位紧急指针: 标识哪部分数据是紧急数据; 
+40字节头部选项: 暂时忽略;
+
+
+
+
+
+
+
+
+确认应答(ACK)机制
+  每一个ACK都带有对应的确认序列号, 意思是告诉发送者, 我已经收到了哪些数据; 下一次你从哪里开始发
+ 
+ 
+ 
+
+ 
+ 
+超时重传机制重传机制
+  主机A发送数据给B之后, 可能因为网络拥堵等原因, 数据无法到达主机B;
+ 如果主机A在一个特定时间间隔内没有收到B发来的确认应答, 就会进行重发
+
+但是, 主机A未收到B发来的确认应答, 也可能是因为ACK丢失了(因此主机B会收到很多重复数据. 那么TCP协议需要能够识别出那些包是重复的包, 并且把重复的丢弃掉. 这时候我们可以利用前面提到的序列号, 就可以很容易做到去重的效果.)
+ import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class TCPServer {
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        // CLOSED 是抽象的状态，实际上可能不存在
+        ServerSocket serverSocket = new ServerSocket(8888);
+        // serverSocket 对应的一个“连接”的状态是 LISTEN
+        while (true) {
+            Socket socket = serverSocket.accept();
+            // socket 对应的连接，是什么状态？
+            // socket 对应连接已经是 ESTABLISHED 状态
+            System.out.println("有一条连接已建立");
+
+            executorService.execute(() -> {
+                try {
+                    synchronized (TCPServer.class) {
+                        TCPServer.class.wait();
+                    }
+                    socket.close();
+                } catch (IOException | InterruptedException e) {
+                }
+                // CLOSED 是抽象状态
+            });
+        }
+    }
+}
+
+ 
+ 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class TCPClient {
+    public static void main(String[] args) throws IOException {
+        // 连接是 CLOSED 状态，抽象的
+        Socket socket = new Socket("182.254.132.183", 8888);
+        // 已经是 ESTABLISHED 状态
+
+        socket.getInputStream().read();
+    }
+}

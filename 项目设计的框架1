@@ -1,0 +1,43 @@
+项目练习：
+  项目原型：原型图设计，完成
+  分析原型图，考虑系统设计
+      前端的基本框架，封装的内容
+      后端
+      数据库设计，前后端接口设计
+前端：html+js+jquery+css
+后端：Controller
+      ControllerAdvice统一异常处理，统一响应格式
+      HandlerInterceptor完成用户会话管理
+       --前端控制逻辑：只校验给定需要登录的页面，返回首页
+       --后端控制逻辑：排除不登录允许访问的接口，返回json，401状态码
+
+开发步骤：
+1)	搭建环境：jdk，idea，maven，mysql，SpringBoot，SpringMVC
+      搭建普通的maven项目
+       准备SpringBoot基础：
+            Application，properties
+            前端：public，static文件夹，static/js/jquery
+2)	准备基础设施：ControllerAdvice，HandlerInterceptor+WebMvcAdapter配置类
+统一的数据格式
+          例如：复制启动类，Exception，model，config包下的所有类
+          注意：LoginInterceptor，AppConfig需要调整
+3)	启动，调试接口
+ 
+明确Spring/Mybatis中对象是：
+     请求还是响应
+     请求和响应是否使用相同类型的对象
+
+准备前端页面
+ 
+	 
+
+
+
+业务分析与建模：
+	数据库建模：根据业务创建数据库表，字段
+	创建java模型类---对应数据库表和字段
+	 
+	 
+	 
+
+

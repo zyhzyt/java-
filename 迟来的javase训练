@@ -1,0 +1,517 @@
+import java.util.*;
+
+
+//编写代码，以给定值x为基准将链表分割成两部分，所有小于x的结点排在大于或等于x的结点之前
+
+class ListNode {
+    int val;
+    ListNode next = null;
+
+    ListNode(int val) {
+        this.val = val;
+    }
+}
+public class Partition {
+    public ListNode partition(ListNode pHead, int x) {
+        // write code here
+        ListNode bs = null;
+        ListNode be = null;
+        ListNode as = null;
+        ListNode ae = null;
+        while (pHead != null) {
+            if(pHead.val < x) {
+                if(bs == null) {
+                    bs = pHead;
+                    be = pHead;
+                }else {
+                    be.next = pHead;//此时的cur已经是循环过一次的
+                    be = be.next;//把be和be.next一起往后移
+                }
+            }else {
+                if(as == null) {
+                    as = pHead;
+                    ae = pHead;
+                }else {
+                    ae.next = pHead;
+                    ae = ae.next;
+                }
+            }
+            pHead = pHead.next;
+        }
+        /*
+        把新的链表串起来
+        1、两个段内 可能有一个是空的
+           如果as不等于空，ae.next = null;
+        2、如果两个段都有数据
+           be.next = as;
+         */
+        if(bs == null) {
+            return as;
+        }
+        /*else(as == null) {
+            return bs;
+        }if(bs != null && as != null) {
+            be.next = as;
+            ae.next = null;
+        }
+        return bs;*/
+        if(bs != null) {
+            be.next = as;
+            if (as != null) {
+                ae.next = as;
+            }
+        }
+        return bs;
+    }
+}
+
+
+import java.util.Arrays;
+
+public class Gift {
+    public int getValue(int[] gifts, int n) {
+        // write code here
+        Arrays.sort(gifts);
+        int check = gifts[gifts.length/2];
+        int count = 0;
+        for (int i = 0;i < gifts.length;i++) {
+            if (gifts[i] == check) {
+                count++;
+            }
+        }
+        if (count > gifts.length/2) {
+            return check;
+        }else return 0;
+    }
+
+    public static void main(String[] args) {
+        int[] gifts = {1,5,5,4,4,5,5,};
+        int n = gifts.length;
+        Gift gift = new Gift();
+        System.out.println(gift.getValue(gifts,n));
+    }
+}
+
+
+
+import java.util.ArrayList;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Scanner;
+
+public class Main {
+//查找和排序 查找和排序 题目:输入任意(用户，成绩)序列，可以获得成绩从高到低或从低到高的排列
+// ，相同成绩都按先录入排列在前的规则处理。
+    private static class Student {
+        private String name;
+        private int score;
+
+        private Student(String name,int score){
+            this.name = name;
+            this.score = score;
+        }
+    }
+
+    public static void main(String[] args) {
+        Scanner sc=new Scanner(System.in);
+        while(sc.hasNext()){
+            int numPeople=sc.nextInt();
+            int option=sc.nextInt();
+            List<Student> list = new ArrayList<>();
+            for(int i=0;i<numPeople;i++){
+                list.add(new Student(sc.next(),sc.nextInt()));
+            }
+            if(option==0){
+                list.sort((o1, o2) -> o2.score - o1.score);
+            }else if(option==1){
+                list.sort((o1,o2) ->o1.score-o2.score);
+                //list.sort(Comparator.comparingInt(o -> o.score));
+            }
+            for(Student stu : list){
+                System.out.println(stu.name+" "+stu.score);
+            }
+        }
+    }
+//        Scanner sc = new Scanner(System.in);
+//        while (sc.hasNext()) {
+//            int n = sc.nextInt();
+//            int t = sc.nextInt();
+//            Student[] students = new Student[n];
+//            for (int i = 0; i < n; i++) {
+//                String name = sc.nextLine();
+//                int score = sc.nextInt();
+//                students[i] = new Student(name, score);
+//            }
+//            if (t == 1) {
+//                for (int i = 0;i < n;i++) {
+//                    for (int j = i+1; j < n;j++) {
+//                        if (students[i].score > students[j].score) {
+//                            Student student1 = new Student(students[j].name,students[j].score);
+//                            students[j] = students[i];
+//                            students[i] = student1;
+//                        }
+//                    }
+//                }
+//
+//            }
+//            if (t == 0) {
+//                for (int i = 0;i < n;i++) {
+//                    for (int j = i+1; j < n;j++) {
+//                        if (students[i].score < students[j].score) {
+//                            Student student1 = new Student(students[i].name,students[i].score);
+//                            students[i] = students[j];
+//                            students[j] = student1;
+//                        }
+//                    }
+//                }
+//            }
+//            StringBuilder sb = new StringBuilder();
+//            for (Student s : students) {
+//                sb.append(s.name).append(" ").append(s.score).append('\n');
+//            }
+//            System.out.print(sb.toString());
+//        }
+}
+
+
+
+import java.util.Arrays;
+
+class Substr1 {
+    //请设计一个高效算法，对于p中的每一个较短字符串，判断其是否为s的子串.
+    static boolean[] chkSubStr(String[] p, int n, String s) {
+        boolean[] tf = new boolean[n];
+        for (int i = 0; i < n; i++) {
+            tf[i] = s.contains(p[i]);
+        }
+        return tf;
+    }
+
+    public static void main(String[] args) {
+        String s = "abcwea";
+        String[] p = {"a","b","c","q"};
+        int n = 4;
+        System.out.println(Arrays.toString(chkSubStr(p, n, s)));
+    }
+
+}
+
+public class Substr {
+    //请设计一个高效算法，对于p中的每一个较短字符串，判断其是否为s的子串.
+    public boolean check(String s1,String s2) {
+        int i = 0;
+        while (i+s1.length() <= s2.length()-1) {
+            int a = i;
+            int count = a+s1.length();
+            StringBuilder sb = new StringBuilder();
+            sb.append(s2.substring(a,count));
+            if (sb.toString().equals(s1))
+                return true;
+            i++;
+        }
+        return false;
+    }
+    public boolean[] chkSubStr(String[] p, int n, String s) {
+        // write code here
+        boolean[] bn = new boolean[n] ;
+        for (int i = 0;i < n;i++) {
+            bn[i] = check(p[i],s);
+        }
+        return bn;
+
+    }
+
+    public static void main(String[] args) {
+        Substr substr = new Substr();
+        String[] p = {"a","b","c"};
+        int n = 3;
+        String s = "abc";
+        System.out.println(Arrays.toString(substr.chkSubStr(p, n, s)));
+
+    }
+}
+
+
+import java.util.Scanner;
+
+class dd{
+    public int foo(int x,int y) {
+        if (x<=0 || y<=0) {
+            return 1;
+        }
+        return 3*foo(x-6,y/2);
+    }
+}
+
+public class Main{
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNext()) {
+            String a = sc.nextLine();
+            char[] b = a.toCharArray();
+            for(int i = 0;i< b.length;i++){
+                char c = b[i];
+                if(c-'A'>=0){
+                    c =(char)( c >'E'? (c-5): (c+21));
+                    b[i] = c;
+                }
+            }             
+        }
+    }
+//        while (sc.hasNext()) {
+//            String s = sc.nextLine().toUpperCase();
+//            char[] ch = s.toCharArray();
+//            for(int i = 0;i< ch.length;i++) {
+//                char c = ch[i];
+//                if (ch[i] < 'A') {
+//                    break;
+//                }
+//                if (c >= 'A') {
+//                    c = (char) (c > 'E' ? (c - 5) : (c + 21));
+//                    ch[i] = c;
+//                }
+//            }
+//            StringBuilder sb = new StringBuilder();
+//            sb.append(ch.toString().split(" "));
+//            System.out.println();
+//        }
+
+}
+//兔子生孩子构成的斐波那契额数列
+class ain {
+    public static int get(int c){
+        if (c == 1 || c == 2) {
+            return 1;
+        }
+        return get(c-1)+get(c-2);
+    }
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNext()) {
+            int c = sc.nextInt();
+            System.out.println(get(c));
+        }
+    }
+}
+
+
+
+import java.util.Scanner;
+
+class TreeNode {
+    int val = 0;
+    TreeNode left = null;
+    TreeNode right = null;
+    public TreeNode(int val) {
+        this.val = val;
+    }
+}
+//实现一个函数，检查二叉树是否平衡，平衡的定义如下，对于树中的任意一个结点，其两颗子树的高度差不超过1。
+//给定指向树根结点的指针TreeNode*root，请返回一个bool，代表这棵树是否平衡.
+class Balance {
+    public boolean isBalance(TreeNode root){
+        if(root == null){
+            return true;
+        }
+        int left = getTreeHeight(root.left);
+        int right = getTreeHeight(root.right);
+        if(Math.abs(left - right) > 1){
+            return false;
+        }
+        return isBalance(root.left) && isBalance(root.right);
+    }
+
+    private int getTreeHeight(TreeNode root) {
+        if(root == null){
+            return 0;
+        }
+        return Math.max(getTreeHeight(root.left),getTreeHeight(root.right))+1;
+
+    }
+}
+
+
+
+//给定-系列正整数，请按要求对数字进行分类，
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNext()){
+            int n = sc.nextInt();
+            int[] a = new int[n];
+            for (int i = 0;i < n;i++){
+                a[i] = sc.nextInt();
+            }
+            int sum0 = 0;int c0 = 0;
+            int cc = 1;int sum1 = 0;int c1 = 0;
+            int count = 0;int c2 = 0;
+            int sum3 = 0;int c3 = 0;
+            int tmp = 0;int c4 = 0;
+            for (int i = 0;i < a.length;i++) {
+                if (a[i]%5 == 0) {
+                    if (a[i]%2 == 0) {
+                        c0++;
+                        sum0 += a[i];
+                    }
+                }else if (a[i]%5 == 1) {
+                    c1++;
+                    sum1 = sum1+cc*a[i];
+                    cc = -1^c1;
+                }else if (a[i]%5 == 2) {
+                    count++;
+                    c2++;
+                }else if (a[i]%5 == 3) {
+                    sum3+=a[i];
+                    c3++;
+                }else if (a[i]%5 == 4) {
+                    c4++;
+
+                    if (a[i] > tmp) {
+                        tmp = a[i];
+                    }
+                }
+            }
+            if (c0 != 0) {
+                System.out.print(sum0+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c1 != 0) {
+                System.out.print(sum1+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c2 != 0) {
+                System.out.print(count+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c3 != 0) {
+                System.out.print(1.0*sum3/c3+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c4 != 0) {
+                System.out.println(tmp);
+            } else {
+                System.out.println("N");
+            }
+
+        }
+    }
+
+
+}
+
+
+
+import java.util.Scanner;
+
+class TreeNode {
+    int val = 0;
+    TreeNode left = null;
+    TreeNode right = null;
+    public TreeNode(int val) {
+        this.val = val;
+    }
+}
+//实现一个函数，检查二叉树是否平衡，平衡的定义如下，对于树中的任意一个结点，其两颗子树的高度差不超过1。
+//给定指向树根结点的指针TreeNode*root，请返回一个bool，代表这棵树是否平衡.
+class Balance {
+    public boolean isBalance(TreeNode root){
+        if(root == null){
+            return true;
+        }
+        int left = getTreeHeight(root.left);
+        int right = getTreeHeight(root.right);
+        if(Math.abs(left - right) > 1){
+            return false;
+        }
+        return isBalance(root.left) && isBalance(root.right);
+    }
+
+    private int getTreeHeight(TreeNode root) {
+        if(root == null){
+            return 0;
+        }
+        return Math.max(getTreeHeight(root.left),getTreeHeight(root.right))+1;
+
+    }
+}
+
+
+
+//给定-系列正整数，请按要求对数字进行分类，
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNext()){
+            int n = sc.nextInt();
+            int[] a = new int[n];
+            for (int i = 0;i < n;i++){
+                a[i] = sc.nextInt();
+            }
+            int sum0 = 0;int c0 = 0;
+            int cc = 1;int sum1 = 0;int c1 = 0;
+            int count = 0;int c2 = 0;
+            int sum3 = 0;int c3 = 0;
+            int tmp = 0;int c4 = 0;
+            for (int i = 0;i < a.length;i++) {
+                if (a[i]%5 == 0) {
+                    if (a[i]%2 == 0) {
+                        c0++;
+                        sum0 += a[i];
+                    }
+                }else if (a[i]%5 == 1) {
+                    c1++;
+                    sum1 = sum1+cc*a[i];
+                    cc = -1^c1;
+                }else if (a[i]%5 == 2) {
+                    count++;
+                    c2++;
+                }else if (a[i]%5 == 3) {
+                    sum3+=a[i];
+                    c3++;
+                }else if (a[i]%5 == 4) {
+                    c4++;
+
+                    if (a[i] > tmp) {
+                        tmp = a[i];
+                    }
+                }
+            }
+            if (c0 != 0) {
+                System.out.print(sum0+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c1 != 0) {
+                System.out.print(sum1+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c2 != 0) {
+                System.out.print(count+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c3 != 0) {
+                System.out.print(1.0*sum3/c3+" ");
+            } else {
+                System.out.print("N"+" ");
+            }
+            if (c4 != 0) {
+                System.out.println(tmp);
+            } else {
+                System.out.println("N");
+            }
+
+        }
+    }
+
+
+}
+
+
+

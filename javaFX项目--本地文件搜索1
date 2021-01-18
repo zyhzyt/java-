@@ -1,0 +1,515 @@
+package file_scan;
+
+import java.io.File;
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class Main {
+    public static void main(String[] args) {
+        //File root = new File("D:\\课程\\2021-1-17-春招冲刺班-项目1\\mysearcher");
+        File root = new File("D:\\课程");
+
+        // 实际项目中用哪个都可以
+        //traversalDepth(root);
+        //traversalBroadcast(root);
+
+//        String[] list = root.list();
+//        System.out.println(Arrays.toString(list));
+
+//        File[] files = root.listFiles();
+//        System.out.println(Arrays.toString(files));
+
+        // Filter 过滤/过滤器
+//        File[] files = root.listFiles(new FilenameFilter() {
+//            @Override
+//            public boolean accept(File dir, String name) {
+//                System.out.println(name);
+//                if (name.endsWith(".jar")) {
+//                    return true;
+//                } else {
+//                    return false;
+//                }
+//            }
+//        });
+//
+//        System.out.println(Arrays.toString(files));
+    }
+
+    // 广度优化 —— 层序遍历 —— 队列
+    private static void traversalBroadcast(File root) {
+        // 无论是不是普通文件还是文件夹都放入队列
+        Queue<File> queue = new LinkedList<>();
+        queue.offer(root);
+
+        while (!queue.isEmpty()) {
+            File file = queue.poll();
+            boolean directory = file.isDirectory();
+            if (directory) {
+                System.out.println("文件夹: " + file);
+            } else {
+                System.out.println("普通文件: " + file);
+            }
+
+            File[] files = file.listFiles();
+            if (files == null) {
+                continue;
+            }
+            if (files.length == 0) {
+                continue;
+            }
+
+            for (File child : files) {
+                queue.offer(child);
+            }
+        }
+    }
+
+    // 深度优先 —— 栈 —— 递归
+    public static void traversalDepth(File root) {
+        System.out.println("文件夹: " + root);
+        File[] files = root.listFiles();
+
+        // 判断是不是叶子结点
+        if (files == null) {
+            return;
+        }
+
+        if (files.length == 0) {
+            return;
+        }
+        // 判断结束
+
+        // 针对每个孩子，进行递归处理
+        // 只处理文件夹孩子即可
+        for (File file : files) {
+            if (!file.isDirectory()) {
+                System.out.println("普通文件: " + file);
+                continue;
+            }
+
+            traversalDepth(file);
+        }
+    }
+}
+
+
+
+package sample;
+
+import file_scan.Main;
+import javafx.application.Platform;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.print.PaperSource;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.GridPane;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Window;
+
+import java.io.File;
+import java.util.Date;
+import java.util.Random;
+
+public class Controller {
+    @FXML
+    public TextField inputField;
+    @FXML
+    public Label outputLabel;
+    @FXML
+    public GridPane rootGridPane;
+
+    // thread 的所有读写操作其实都在主线程中，所以不需要考虑线程安全的问题
+    private Thread thread = null;
+
+    @FXML
+    public TableView<Student> tableView;
+
+    private int id = 1;
+    private final Random random = new Random(20210118);
+    private final String[] GENDERS = {"女", "男"};
+    private void addStudent(String name) {
+        int age = random.nextInt(50) + 20;
+        String gender = GENDERS[random.nextInt(2)];
+        Student student = new Student(id++, name, age, gender);
+
+        // Observable  —— 可以被观察的/具备被观察能力的
+        // ObservableList 是一个 List，同时也是 Observable 的
+        // Observable: 可以有观众（类似 up 主）
+        // item：项    指的是表中的数据们
+        ObservableList<Student> items = tableView.getItems();
+        items.add(student);
+        System.out.println(student);
+    }
+
+    @FXML
+    public void 点击事件(MouseEvent mouseEvent) {
+
+        System.out.println(new Date() + ": 按钮被点击");
+        // 从输入框中读取文字内容
+
+        String inputText = inputField.getText();
+        System.out.println("用户输入了: " + inputText);
+        addStudent(inputText);
+
+//        try {
+//            int n = Integer.parseInt(inputText.trim());
+//            // 主线程
+//            if (thread != null) {
+//                thread.interrupt();
+//            }
+//
+//            thread = new Thread(() -> {
+//                long r = fib(n);    // <--- 目前在子线程中进行
+//                // <--- 在 UI 中，主线程的核心工作是响应事件
+//                // <--- 解决办法：不要把可能耗时比较久的操作，放到主线程中进行
+//
+//                // 涉及 UI 修改的，最好回到主线程中进行
+//                // 如果多个线程同时操作 UI 界面，可能有线程安全问题
+//                System.out.printf("fib(%d) = %d\n", n, r);
+//                if (Thread.interrupted()) {
+//                    // 前提是 thread == this。thread 是我这个线程
+//                    // 如果 thread 指向别的线程了，我没有权力把 thread 修改
+//                    // 由于当前线程被中断了，所以很大可能 thread 已经指向了其他线程了
+//                    // 没有权力修改 thread 了
+//                    // thread = null;  // <-- 这里加这句代码对不对？   所以不对
+//                    return;
+//                }
+//                Platform.runLater(() -> {
+//                    // 以事件方式通知主线程执行该操作
+//                    // 主线程中
+//                    outputLabel.setText(String.valueOf(r));
+//                    // 能保证 thread 就是 当前线程么？
+//                    //thread = null;    // 不行，所以有 BUG
+//                });
+//            });
+//            thread.start();
+//        } catch (NumberFormatException exc) {
+//            outputLabel.setText("请输入合法的数字");
+//        }
+    }
+
+    // 故意使用特别慢的及算法方式，时间复杂度是 O(2^n)
+    private long fib(int n) {
+        if (n < 2) {
+            return 1;
+        }
+
+        return fib(n - 1) + fib(n - 2);
+    }
+
+    private Thread scanThread = null;
+
+    @FXML
+    public void 选择文件夹(MouseEvent mouseEvent) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        Window window = rootGridPane.getScene().getWindow();
+        File root = chooser.showDialog(window);
+        System.out.println(root);
+        if (root == null) {
+            return;
+        }
+
+        scanThread = new Thread(() -> {
+            //Main.traversalDepth(root);
+            // 把结果放入表中
+        });
+        // Daemon —— 精灵
+        // 默默守护着你 —— 后台线程
+        scanThread.setDaemon(true);
+        scanThread.start();
+        // JVM 退出条件：所有前台线程都退掉
+        // Main.traversalDepth(root);  // 运行时间的边界是否明确 —— 可能运行时间过长的
+    }
+}
+
+
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.GridPane?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<GridPane fx:controller="sample.FileScanController"
+          xmlns:fx="http://javafx.com/fxml"
+          alignment="center"
+          hgap="10"
+          vgap="10"
+        fx:id="rootGridPane">
+    <Button text="选择文件夹" GridPane.rowIndex="1" GridPane.columnIndex="0" onMouseClicked="#选择文件夹"/>
+
+    <TableView fx:id="tableView" GridPane.rowIndex="3" GridPane.columnIndex="0" prefWidth="1000">
+        <columns>
+            <TableColumn text="文件 OR 文件夹">
+                <cellValueFactory>
+                    <PropertyValueFactory property="directory" />
+                </cellValueFactory>
+            </TableColumn>
+
+            <TableColumn text="路径">
+                <cellValueFactory>
+                    <PropertyValueFactory property="path" />
+                </cellValueFactory>
+            </TableColumn>
+        </columns>
+    </TableView>
+
+</GridPane>
+
+
+package sample;
+
+import java.io.File;
+
+public class FileMeta {
+    private final File file;
+
+    public FileMeta(File file) {
+        this.file = file;
+    }
+
+    public String getDirectory() {
+        if (file.isDirectory()) {
+            return "文件夹";
+        } else {
+            return "普通文件";
+        }
+    }
+
+    public String getPath() {
+        return file.getAbsolutePath();
+    }
+
+    @Override
+    public String toString() {
+        return file.toString();
+    }
+}
+
+
+
+package sample;
+
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.scene.control.TableView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.GridPane;
+import javafx.stage.DirectoryChooser;
+
+import java.io.File;
+
+public class FileScanController {
+    @FXML
+    public GridPane rootGridPane;
+    @FXML
+    public TableView<FileMeta> tableView;
+
+    @FXML
+    public void 选择文件夹(MouseEvent mouseEvent) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        File root = chooser.showDialog(rootGridPane.getScene().getWindow());
+        if (root == null) {
+            return;
+        }
+
+        Thread t = new Thread(() -> {
+            scan(root);
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // 调用该方法的，既有文件夹，也有普通文件
+    private void scan(File root) {
+        Platform.runLater(() -> {
+            FileMeta fileMeta = new FileMeta(root);
+            tableView.getItems().add(fileMeta); // 涉及 UI 部分的，放到主线程执行
+        });
+
+        if (!root.isDirectory()) {
+            return;
+        }
+
+        File[] children = root.listFiles();
+        if (children == null) {
+            return;
+        }
+
+        for (File child : children) {
+            scan(child);
+        }
+    }
+}
+
+
+
+package sample;
+
+import javafx.application.Application;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
+import javafx.util.Callback;
+
+public class Main extends Application {
+
+    private static Parent build() {
+        GridPane gridPane = new GridPane();
+        gridPane.setAlignment(Pos.CENTER);
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        TextField textField = new TextField();
+        gridPane.add(textField, 0, 0);
+
+        Button button = new Button();
+        button.setText("click me");
+        gridPane.add(button, 0, 1);
+
+        Label label = new Label();
+        label.setPrefWidth(200);
+        label.setStyle("-fx-border-color: black; -fx-border-width: 1; -fx-border-radius: 5");
+        gridPane.add(label, 0, 2);
+
+        Controller controller = new Controller();
+        controller.inputField = textField;
+        controller.outputLabel = label;
+
+        //button.setOnMouseClicked(controller::点击事件);
+        //button.setOnMouseClicked(event -> controller.点击事件(event));
+        button.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent mouseEvent) {
+                controller.点击事件(mouseEvent);
+            }
+        });
+
+
+
+
+
+
+        // 关于“表”的实验
+        TableView<Student> tableView = new TableView<>();
+        gridPane.add(tableView, 0, 3);
+        controller.tableView = tableView;
+
+        // 表中有哪些列
+        TableColumn<Student, String> idColumn = new TableColumn<>();
+        idColumn.setText("#ID");
+        idColumn.setCellValueFactory(param -> param.getValue().getIdValue());
+        tableView.getColumns().add(idColumn);
+
+        TableColumn<Student, String> nameColumn = new TableColumn<>();
+        nameColumn.setText("姓名");
+        nameColumn.setCellValueFactory(param -> param.getValue().getNameValue());
+        tableView.getColumns().add(nameColumn);
+
+        TableColumn<Student, String> ageColumn = new TableColumn<>();
+        ageColumn.setText("年龄");
+        ageColumn.setCellValueFactory(param -> param.getValue().getAgeValue());
+        tableView.getColumns().add(ageColumn);
+
+        TableColumn<Student, String> genderColumn = new TableColumn<>();
+        genderColumn.setText("性别");
+        genderColumn.setCellValueFactory(param -> param.getValue().getGenderValue());
+        tableView.getColumns().add(genderColumn);
+        // 关于“表”的实验结束
+
+
+
+
+
+
+
+        return gridPane;
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception{
+        //Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
+        //Parent root = build();
+        Parent root = FXMLLoader.load(getClass().getResource("file-scan.fxml"));
+        primaryStage.setTitle("陈沛鑫");
+        Scene scene = new Scene(root, 1100, 550);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
+
+
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.GridPane?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<GridPane fx:controller="sample.Controller"
+          xmlns:fx="http://javafx.com/fxml"
+          alignment="center"
+          hgap="10"
+          vgap="10"
+        fx:id="rootGridPane">
+    <TextField fx:id="inputField" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+    <Button text="点击我" GridPane.rowIndex="1" GridPane.columnIndex="0" onMouseClicked="#点击事件"/>
+    <Button text="选择文件夹" GridPane.rowIndex="1" GridPane.columnIndex="1" onMouseClicked="#选择文件夹"/>
+    <Label fx:id="outputLabel" GridPane.rowIndex="2" GridPane.columnIndex="0" prefWidth="200" style="-fx-border-color: black; -fx-border-width: 1; -fx-border-radius: 5" />
+
+
+    <TableView fx:id="tableView" GridPane.rowIndex="3" GridPane.columnIndex="0" prefWidth="500">
+        <columns>
+            <TableColumn text="#ID">
+                <cellValueFactory>
+                    <PropertyValueFactory property="id"/>
+                </cellValueFactory>
+            </TableColumn>
+
+            <TableColumn text="姓名">
+                <cellValueFactory>
+                    <PropertyValueFactory property="name"/>
+                </cellValueFactory>
+            </TableColumn>
+
+            <TableColumn text="年龄">
+                <cellValueFactory>
+                    <PropertyValueFactory property="age"/>
+                </cellValueFactory>
+            </TableColumn>
+
+            <TableColumn text="性别">
+                <cellValueFactory>
+                    <PropertyValueFactory property="gender"/>
+                </cellValueFactory>
+            </TableColumn>
+        </columns>
+    </TableView>
+
+</GridPane>
+
+

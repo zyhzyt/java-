@@ -1,0 +1,268 @@
+package atomic_demo;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class LockFree {
+    private static final int COUNT = 10_0000_0000;
+    private static final AtomicInteger ai = new AtomicInteger(0);
+
+    public static void main(String[] args) throws InterruptedException {
+        long b = System.currentTimeMillis();
+        Thread adder = new Thread(() -> {
+            for (int i = 0; i < COUNT; i++) {
+                ai.getAndIncrement();
+            }
+        });
+        adder.start();
+
+        Thread suber = new Thread(() -> {
+            for (int i = 0; i < COUNT; i++) {
+                ai.getAndDecrement();
+            }
+        });
+        suber.start();
+
+        adder.join();
+        suber.join();
+
+        System.out.println(ai.get());
+        long e = System.currentTimeMillis();
+        System.out.println(e - b);
+    }
+}
+
+
+
+package atomic_demo;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class UseLock {
+    private static final int COUNT = 10_0000_0000;
+    private static int ai = 0;
+
+    public static void main(String[] args) throws InterruptedException {
+        long b = System.currentTimeMillis();
+        Thread adder = new Thread(() -> {
+            for (int i = 0; i < COUNT; i++) {
+                synchronized (UseLock.class) {
+                    ai++;
+                }
+            }
+        });
+        adder.start();
+
+        Thread suber = new Thread(() -> {
+            for (int i = 0; i < COUNT; i++) {
+                synchronized (UseLock.class) {
+                    ai--;
+                }
+            }
+        });
+        suber.start();
+
+        adder.join();
+        suber.join();
+
+        System.out.println(ai);
+        long e = System.currentTimeMillis();
+        System.out.println(e - b);
+    }
+}
+
+
+package count_down_latch_demo;
+
+import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        final int N = 100;
+        final long[][] arrays = new long[N][];
+
+        for (int i = 0; i < N; i++) {
+            arrays[i] = new long[100_0000];
+        }
+
+        final CountDownLatch startSignal = new CountDownLatch(1);
+        final CountDownLatch doneSignal = new CountDownLatch(N);
+
+        for (int i = 0; i < N; i++) {
+            final long[] targetArray = arrays[i];
+            Thread worker = new Thread(() -> {
+                try {
+                    // 做一些任务的准备工作
+                    // 还没有收到开始信号，等待
+                    startSignal.await();
+                    // 收到了开始信号了，开始执行任务
+
+                    Random random = new Random();
+                    TimeUnit.SECONDS.sleep(random.nextInt(10) + 10);
+                    Arrays.sort(targetArray);
+                    Thread thread = Thread.currentThread(); // 返回当前线程对象的引用
+                    System.out.printf("%s: 已经完成任务\n", thread.getName());
+
+                    // 任务执行完成，但还没有汇报
+                    doneSignal.countDown();
+                    // 任务执行完成，并且已经汇报
+                } catch (InterruptedException e) {
+                    // 有人让该线程中断
+                    e.printStackTrace();
+                }
+            }, String.format("工作线程-%02d", i));
+            worker.start();
+        }
+
+        // 特工已经埋伏下去了，没有给开始信号，特工不会开始任务
+        Random r = new Random();
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < 100_0000; j++) {
+                arrays[i][j] = r.nextInt();
+            }
+        }
+        // 所以可以做一些准备工作
+        startSignal.countDown();    // 发出开始指令，表示各个特工可以开始执行任务了
+        // 能不能说，每个特工都已经开始执行任务了？ —— 不能
+
+        // 等待所有特工都完成任务之后，进行情况汇总
+        doneSignal.await();     // 一共有 N 个信号，所以，只有 N 个结束信号都收到时，表示所有任务都完成了
+        // 肯定所有任务都完成了
+        // 进行汇总工作
+        for (int i = 0; i < N; i++) {
+            // 肯定数组都排好序了
+            // 肯定没有报错
+            if (arrays[i][0] > arrays[i][100_0000 - 1]) {
+                System.out.println("错误了");
+            }
+        }
+    }
+}
+
+
+
+package file_scan;
+
+import java.io.File;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class Main {
+    private static void scanDirectory(File root) throws InterruptedException {
+        ExecutorService threadPool = new ThreadPoolExecutor(
+                10, 10,
+                0, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>()
+        );
+        //打卡器 counter = new 打卡器();
+        AtomicInteger counter = new AtomicInteger(0);
+        CountDownLatch doneSignal = new CountDownLatch(1);
+
+
+
+        ScanTask task = new ScanTask(root, threadPool, counter, doneSignal);
+        // 打卡
+        counter.incrementAndGet();
+        threadPool.execute(task);
+
+        // TODO: 想办法，在这里等，直到 root 整棵树都被扫描完成
+        doneSignal.await();
+        threadPool.shutdown();
+    }
+
+    private static void scan(File root) {
+        if (!root.isDirectory()) {
+            return;
+        }
+
+        File[] files = root.listFiles();
+        if (files == null) {
+            return;
+        }
+
+        for (File file : files) {
+            scanDirectorySingle(file);
+        }
+    }
+
+    public static void scanDirectorySingle(File root) {
+        scan(root);
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        File root = new File("C:\\");
+        long b = System.currentTimeMillis();
+        scanDirectorySingle(root);
+        long e = System.currentTimeMillis();
+        System.out.println("root 整棵树 下的所有文件全部扫描完成！");
+        System.out.println(e - b);
+    }
+}
+
+
+
+package file_scan;
+
+import java.io.File;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class ScanTask implements Runnable {
+    private final File directory;
+    private final ExecutorService threadPool;
+    private final AtomicInteger counter;
+    private final CountDownLatch doneSignal;
+
+    public ScanTask(File directory, ExecutorService threadPool, AtomicInteger counter, CountDownLatch doneSignal) {
+        this.directory = directory;
+        this.threadPool = threadPool;
+        this.counter = counter;
+        this.doneSignal = doneSignal;
+    }
+
+    @Override
+    public void run() {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                //System.out.println(file);
+                if (file.isDirectory()) {
+                    ScanTask task = new ScanTask(file, threadPool, counter, doneSignal);
+                    // 打卡
+                    counter.incrementAndGet();
+                    // 提交给线程池
+                    threadPool.execute(task);
+                }
+            }
+        }
+
+        // 销卡
+        if (counter.decrementAndGet() == 0) {
+            // 代表我就是最后一个任务
+            doneSignal.countDown(); // 发送一个结束信号
+        }
+    }
+}
+
+
+
+package file_scan;
+
+public class 打卡器 {
+    private int count = 0;
+
+    public void add() {
+        count++;
+    }
+
+    public void sub() {
+        count--;
+    }
+
+    public int get() {
+        return count;
+    }
+}

@@ -1,0 +1,239 @@
+AOP
+1.	AOP（Aspect Oriented Programming）称为面向切面编程，
+2.	AOP利用一种称为"横切"的技术，将那些影响了多个类的公共行为封装到一个可重用模块，并将其命名 为"Aspect"，即切面。 
+3.	使用"横切"技术，AOP把软件系统分为两个部分：核心关注点和横切关注点。
+4.	业务处理的主要流程是核心关注点，与之关系不大的部分是横切关注点。 
+5.	横切关注点的一个特点是，他们经常发生在核心关注点的多处，而各处基本相似，比如权限认证、日志、事物。
+6.	AOP的作用在于分离系统中的各种关注点，将核心关注点和横切关注点分离开来。
+
+AOP可以说是OOP（Object Oriented Programming，面向对象编程）的补充和完善
+传统的后端三层架构分层设计模式为：Controller、Service、DAO三层，每一层对应不同的作用： 
+1.	Controller抽象了业务中，接收HTTP请求，解析/校验请求数据等操作，是前端控制器 
+2.	Service抽象了业务中，比较复杂的业务逻辑，是业务处理类 
+3.	DAO抽象了业务中，对数据的处理，是数据访问类 
+4.	其调用次序为：Controller方法调用Service方法，Service方法调用DAO方法
+
+
+使用场景及作用 对以上统一业务来说，常见的切面业务如： 
+1. 响应统一的数据格式 
+2. 统一异常处理 
+3. 统一日志记录，如跟踪用户访问信息 
+4. 用户统一会话管理、权限管理 
+5. 方法执行时间计算 
+6. 事务管理 
+7. 其他
+
+解决的最大问题就是对横切业务的统一管理： 
+1.	横切代码的高度复用，和业务代码互相独立，满足代码设计上的高内聚低耦合 
+2.	系统更好的扩展性，可维护性
+
+
+
+
+
+
+实现方式
+代理设计模式
+被代理类：原始类不进行任何修改，但创建和使用时，不再使用原始的被代理类，而是设计一个原始类的代理类
+代理类：基于被代理类，构造一个代理类，在使用时，也是使用代理类
+
+静态代理设计模式（了解）
+  继承的方式，或聚合 +接口的方式
+
+静态织入技术（了解）
+静态织入的字节码技术，如 AspectJ，可以完成在真正运行前就织入字节码的内容。 
+编译期织入：在Java编译期，采用特殊的编译器，将切面的字节码织入到生成的 class 字节码文件 中。可以在编译 java 文件为 class 文件时织入，也可以在已生成的 class 文件再次织入。 
+加载期织入：通过特殊的类加载器，在类被加载进虚拟机之前织入。
+
+动态代理
+在 class 代码运行期，动态的织入字节码。通常是采用 JDK 原生的动态代理 API，或一些字节码框架（如 ASM，CGLIB，Javassist 等），可以根据被代理类，在运行期动态的织入字节码生成代理类。
+
+JDK实现
+package org.example.demo.proxy;
+import org.example.demo.service.AliPayService;
+import org.example.demo.service.PayService;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+//动态代理：使用JDK提供的api（InvocationHandler、Proxy实现），此种方式实现，要求被代理类必须实现接口
+public class PayServiceJDKInvocationHandler implements InvocationHandler {
+    //目标对象即就是被代理对象
+    private Object target;
+    public PayServiceJDKInvocationHandler( Object target) {
+        this.target = target;
+    }
+    //proxy代理对象
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws
+            Throwable {
+        //1.安全检查
+        System.out.println("安全检查");
+        //2.记录日志
+        System.out.println("记录日志");
+        //3.时间统计开始
+        System.out.println("记录开始时间");
+        //通过反射调用被代理类的方法
+        Object retVal = method.invoke(target, args);
+        //4.时间统计结束
+        System.out.println("记录结束时间");
+        return retVal;
+    }
+    public static void main(String[] args) {
+        PayService target=  new AliPayService();
+        //方法调用处理器
+        InvocationHandler handler =
+                new PayServiceJDKInvocationHandler(target);
+        //创建一个代理类：通过被代理类、被代理实现的接口、方法调用处理器来创建
+        PayService proxy = (PayService) Proxy.newProxyInstance(
+                target.getClass().getClassLoader(),
+                new Class[]{PayService.class},
+                handler  );
+        proxy.pay();
+    }
+}
+
+
+CGLIB实现
+package org.example.demo.proxy;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.MethodInterceptor;
+import org.springframework.cglib.proxy.MethodProxy;
+import org.example.demo.service.AliPayService;
+import org.example.demo.service.PayService;
+import java.lang.reflect.Method;
+public class PayServiceCGLIBInterceptor implements MethodInterceptor {
+    //被代理对象
+    private Object target;
+    public PayServiceCGLIBInterceptor(Object target){
+        this.target = target;
+    }
+    @Override
+    public Object intercept(Object o, Method method, Object[] args,
+                            MethodProxy methodProxy) throws Throwable {
+        //1.安全检查
+        System.out.println("安全检查");
+        //2.记录日志
+        System.out.println("记录日志");
+        //3.时间统计开始
+        System.out.println("记录开始时间");
+        //通过cglib的代理方法调用
+        Object retVal = methodProxy.invoke(target, args);
+        //4.时间统计结束
+        System.out.println("记录结束时间");
+        return retVal;
+    }
+    public static void main(String[] args) {
+        PayService target=  new AliPayService();
+        PayService proxy= (PayService) Enhancer.create(target.getClass(),new
+                PayServiceCGLIBInterceptor(target));
+        proxy.pay();
+    }
+}
+
+JDK 和 CGLIB 实现的区别 
+1. JDK 实现，要求被代理类必须实现接口，之后是通过 InvocationHandler 及 Proxy ，在运行时动态的在内存中生成了代理类对象，该代理对象是通过实现同样的接口实现（类似静态代理接口实现的方式），只是该代理类是在运行期时，动态的织入统一的业务逻辑字节码来完成。 
+2. CGLIB 实现，被代理类可以不实现接口，是通过继承被代理类，在运行时动态的生成代理类对象。
+
+
+SpringAOP中的实现
+Spring AOP由  spring-aop 、 
+spring-aspects 和 
+spring-instrument 3 个模块组成。
+SpringAOP构建在动态代理基础上，因此Spring对AOP的支持局限于方法拦截。
+
+SpringAOP支持 JDK 和 CGLIB 方式实现动态代理。默认情况下，实现了接口的类，使用 AOP 会基于 JDK 生成代理类，没有实现接口的类，会基于 CGLIB 生成代理类。
+
+
+SpringAOP的 AspectJ 支持 
+SpringAOP只提供了 AspectJ 的注解语法支持，没有真实使用 AspectJ 的编译器，在运行时还是基于单纯的AOP。也就是说，加入 spring-aspects 依赖包，只是可以使用 AspectJ 的语法，运行时还是基于 spring-aop 依赖包的动态代理实现
+
+ 
+切面（Aspect）
+切面（Aspect）由 切点（Pointcut）和通知（Advice）组成，它既包含了横切逻辑的定义，也包括了连 接点的定义。
+Spring AOP就是负责实施切面的框架，它将切面所定义的横切逻辑织入到切面所指定的连接点中。 在SpringAOP中，切面由容器中的Bean使用@Aspect注解实现，如
+@Aspect
+ @Component 
+public class PojoAspect { 
+   }
+
+连接点（Join Point）
+应用执行过程中能够插入切面的一个点，这个点可以是方法调用时，抛出异常时，甚至修改字段时。切面代码可以利用这些点插入到应用的正常流程之中，并添加新的行为。
+在 Spring AOP 中，Join Point 总是方法的执行点, 即只有方法连接点。所以使用SpringAOP，无需使用连接点的代码
+切点（Pointcut）
+Pointcut是匹配 Join Point 的谓词。 
+Pointcut 的作用就是提供一组规则（使用 AspectJ pointcut expression language 来描述）来匹配 Join Point，给满足规则的 Join Point 添加 Advice。
+
+切点表达式说明
+@AspectJ 支持三种通配符 
+*  ：匹配任意字符，只匹配一个元素（包，类，或方法，方法参数） 
+.. ：匹配任意字符，可以匹配多个元素 ，在表示类时，必须和 * 联合使用。 
++  ：表示按照类型匹配指定类的所有类，必须跟在类名后面，如 com.cad.Car+ ,表示继承该类的所有子类包括本身 
+
+切点表达式由切点函数组成，其中 execution() 是最常用的切点函数，用来匹配方法，语法为：
+execution() 修饰符和异常可以省略
+
+表达式示例 
+execution(* com.cad.demo.User.*(..)) ：匹配 User 类里的所有方法
+execution(* com.cad.demo.User+.*(..)) ：匹配该类的子类包括该类的所有方法 
+execution(* com.cad.*.*(..)) ：匹配 com.cad 包下的所有类的所有方法
+execution(* com.cad..*.*(..)) ：匹配 com.cad 包下、子孙包下所有类的所有方法 
+execution(* addUser(String, int)) ：匹配 addUser 方法，且第一个参数类型是 String，第二个 参数类型是 int
+
+通知（Advice）
+切面的工作被称之为通知
+通知：定义了切面是什么，何时使用，其描述了切面要完成的工作，还解决何时执行这个工作的问题。 
+Spring切面类中，可以在方法上使用以下注解，会设置方法为通知方法，在满足条件后会通知本方法进行调用： 
+@Before：通知方法会在目标方法调用之前执行。 
+@After：通知方法会在目标方法返回或者抛出异常后调用。  
+@AfterReturning：通知方法会在目标方法返回后调用。 
+@AfterThrowing：通知方法会在目标方法抛出异常后调用。 
+@Around：通知包裹了被通知的方法，在被通知的方法通知之前和调用之后执行自定义的行为。
+
+许多 AOP框架，包括 Spring AOP，会将 Advice 模拟为一个拦截器（Interceptor）, 并且在 Join Point 上维护多个 Advice，进行层层拦截。如之前我们在SpringMVC中学习的 @ControllerAdvice就是。
+
+
+package org.example.aop;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.*;
+import org.springframework.stereotype.Component;
+@Aspect//定义切面，表示进行aop编程
+@Component
+public class TestAOP {
+   //定义切点：进行方法拦截
+    @Pointcut("execution(* org.example.controller.*.*(..))")
+    public void loginPointcut(){
+    }
+    //通知：前置通知，传入   切点方法名()
+    @Before("loginPointcut()")
+    public void beforeRequest(){
+        System.out.println("@Before");
+    }
+    //通知：后置通知
+    @After("loginPointcut()")
+    public void afterRequest(){
+        System.out.println("@After");
+    }
+    @AfterReturning("loginPointcut()")
+    public void afterRequestReturn(){
+        System.out.println("@AfterReturning");
+    }
+    @AfterThrowing("loginPointcut()")
+    public void afterRequestThrow(){
+        System.out.println("@AfterThrowing");
+    }
+    @Around("loginPointcut()")
+    public Object aroundRequest(ProceedingJoinPoint joinPoint){
+        Object obj = null;
+        try{
+            //方法执行前可以加入前置逻辑
+            System.out.println("@Around前执行");
+            obj = joinPoint.proceed();//目标方法执行
+            System.out.println("@Around后执行");
+        }catch (Throwable e){
+//            e.printStackTrace();
+            System.err.println("@Around捕获异常");
+        }
+        return obj;
+    }
+}

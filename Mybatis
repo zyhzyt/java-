@@ -1,0 +1,164 @@
+#debug=true
+# 设置打印日志的级别，及打印sql语句
+#日志级别：trace,debug,info,warn,error
+#基本日志
+logging.level.root=INFO
+#扫描的包并按debug日志级别打印：druid.sql.Statement类和org.example包
+logging.level.druid.sql.Statement=DEBUG
+
+logging.level.org.example=DEBUG
+#数据库连接池配置：
+spring.datasource.url=jdbc:mysql://localhost:3306/mybatis_study?
+useUnicode=true&characterEncoding=UTF-8&useSSL=false
+spring.datasource.username=root
+spring.datasource.password=wdtdz123
+#指定Mybatis表和实体映射关系xml配置文件，包含表与实体的映射，字段和属性的映射，及各个sql
+语句
+mybatis.mapper-locations=classpath:mapper/**Mapper.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 命名空间：使用全限定名绑定Mapper接口 -->
+<mapper namespace="org.example.mapper.UserMapper">
+    <!-- 定义结果集映射关系：绑定结果集字段和转换的java对象之间的关系 -->
+    <resultMap id="BaseResultMap" type="org.example.model.User">
+        <!-- 结果集字段和java对象属性的映射 -->
+        <id column="id" property="id" />
+        <result column="username" property="username" />
+        <result column="password" property="password" />
+        <result column="nickname" property="nickname" />
+        <result column="sex" property="sex" />
+        <result column="birthday" property="birthday" />
+        <result column="head" property="head" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+    
+    <!-- 定义SQL语句：id绑定Mapper接口的方法名, parameterType绑定方法参数类型 -->
+    <select id="selectById" parameterType="java.lang.Integer"
+            resultMap="BaseResultMap">
+        select
+            *
+        from user where id=#{id}
+    </select>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        select
+            id,
+            username,
+            password,
+            nickname,
+            sex,
+            birthday,
+            head,
+            create_time
+        from user where
+            username like #{username}
+                    and
+            id &gt;= #{sid} and id &lt;= #{eid}
+    </select>
+</mapper>
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.example.mapper.ArticleMapper">
+    <resultMap id="BaseResultMap" type="org.example.model.Article">
+        <id column="id" property="id" />
+        <result column="title" property="title" />
+        <result column="content" property="content" />
+        <result column="view_count" property="viewCount" />
+        <result column="user_id" property="userId" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+</mapper>
+
+
+package org.example;
+
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class,args);
+    }
+}
+
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Date;
+
+@Getter
+@Setter
+@ToString
+public class User {
+    private Integer id;
+    private String username;
+    private String password;
+    private String nickname;
+    private Boolean sex;
+    private Date birthday;
+    private String head;
+    private Date createTime;
+}
+
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Date;
+
+@Getter
+@Setter
+@ToString
+public class Article {
+    private Integer id;
+    private String title;
+    private String content;
+    private Integer view_count;
+    private Integer user_id;
+    private Date create_time;
+
+}
+package org.example.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.example.model.User;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Mapper
+@Component//可有可无
+public interface UserMapper {
+
+    User selectById(Integer id);
+
+    //根据用户名模糊查询，like '%悟%'，id，查询给定范围的，2<=id<=4
+    List<User> selectByCondition(@Param("username") String username,
+                                 @Param("sid") Integer sid,
+                                 @Param("eid") Integer eid);
+}
+package org.example.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Component;
+
+@Mapper
+@Component//可有可无
+public interface ArticleMapper {
+
+
+}
+

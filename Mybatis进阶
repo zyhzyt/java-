@@ -1,0 +1,36 @@
+Mybatis进阶
+多个方法参数
+需要在方法参 数上使用 @Param("参数的名称") ，之后在 sql 中使用 #{参数的名称} 的方式来替换占位符。
+
+#{参数} vs ${参数}
+对于 #{参数} 的使用来说，如果参数是字符串，在替换占位符时，会在 sql 语句中加上单引号。 如果是不能使用单引号的字符串，例如 sql 语句是 order by 字段 {传入参数} ，此时 {传入参数} 就需 要使用 ${传入参数} 这样的占位符，替换时不会带上单引号。
+
+插入时获取自增主键
+useGeneratedKeys：这会令 MyBatis 使用 JDBC 的 getGeneratedKeys 方法来取出由数据库内部生成的主键（比如：像 MySQL 和 SQL Server 这样的关系型数据库管理系统的自动递增字段）， 默认值：false。 
+keyColumn：设置生成键值在表中的列名，在某些数据库（像 PostgreSQL）中，当主键列不是表 中的第一列的时候，是必须设置的。如果生成列不止一个，可以用逗号分隔多个属性名称。 
+keyProperty：指定能够唯一识别对象的属性，MyBatis 会使用 getGeneratedKeys 的返回值或 insert 语句的 selectKey 子元素设置它的值，默认值：未设置（ unset ）。如果生成列不止一个，可以用逗号分隔多个属性名称。
+
+一对一结果映射
+使用 <association>标签，表示一对一的结果映射： 
+property 属性：指定 Article 中对应的属性，即用户。 
+resultMap 属性：指定关联的结果集映射，将基于该映射配置来组织用户数据。 
+columnPrefix 属性：绑定一对一对象时，是通过 columnPrefix+association.resultMap.column 来映射结果集字段。
+association.resultMap.column是指标签中resultMap属性，对应的结果集映射中，column字段。
+
+<association property="user"
+             columnPrefix="u_"
+             resultMap="org.example.mapper.UserMapper.BaseResultMap">
+</association>
+ 
+ 
+
+一对多结果映射
+一对多关系需要使用标签<collection>，
+<collection property="articles"
+            columnPrefix="a_"
+            resultMap="org.example.mapper.ArticleMapper.BaseResultMap"/>
+ 
+
+
+
+

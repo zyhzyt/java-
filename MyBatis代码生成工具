@@ -1,0 +1,706 @@
+package org.example.base;
+
+public interface BaseMapper<T> {
+
+    int deleteByPrimaryKey(Integer id);
+
+    int insert(T record);
+
+    int insertSelective(T record);
+
+    T selectByPrimaryKey(Integer id);
+
+    int updateByPrimaryKeySelective(T record);
+
+    int updateByPrimaryKey(T record);
+}
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.CommentGenerator;
+import org.mybatis.generator.api.IntrospectedColumn;
+import org.mybatis.generator.api.IntrospectedTable;
+import org.mybatis.generator.api.dom.java.*;
+import org.mybatis.generator.api.dom.xml.XmlElement;
+import org.mybatis.generator.internal.util.StringUtility;
+
+import java.util.Properties;
+
+public class DefaultCommentGenerator implements CommentGenerator {
+    @Override
+    public void addConfigurationProperties(Properties properties) {
+
+    }
+
+    @Override
+    public void addFieldComment(Field field, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn) {
+        if(introspectedColumn.isIdentity())
+            field.addJavaDocLine("");
+        if (StringUtility.stringHasValue(introspectedColumn.getRemarks())) {
+            field.addJavaDocLine("/**");
+            StringBuilder sb = new StringBuilder();
+            sb.append(" * ");
+            sb.append(introspectedColumn.getRemarks());
+            field.addJavaDocLine(sb.toString());
+            field.addJavaDocLine(" */");
+        }
+    }
+
+    @Override
+    public void addFieldComment(Field field, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addModelClassComment(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        if (StringUtility.stringHasValue(introspectedTable.getRemarks())) {
+            topLevelClass.addJavaDocLine("/**");
+            topLevelClass.addJavaDocLine(" * "+introspectedTable.getRemarks());
+            topLevelClass.addJavaDocLine(" */");
+        }
+    }
+
+    @Override
+    public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable, boolean markAsDoNotDelete) {
+
+    }
+
+    @Override
+    public void addEnumComment(InnerEnum innerEnum, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addGetterComment(Method method, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn) {
+
+    }
+
+    @Override
+    public void addSetterComment(Method method, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn) {
+
+    }
+
+    @Override
+    public void addGeneralMethodComment(Method method, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addJavaFileComment(CompilationUnit compilationUnit) {
+
+    }
+
+    @Override
+    public void addComment(XmlElement xmlElement) {
+
+    }
+
+    @Override
+    public void addRootComment(XmlElement rootElement) {
+
+    }
+}
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.IntrospectedColumn;
+import org.mybatis.generator.api.IntrospectedTable;
+import org.mybatis.generator.api.PluginAdapter;
+import org.mybatis.generator.api.dom.java.FullyQualifiedJavaType;
+import org.mybatis.generator.api.dom.java.Interface;
+import org.mybatis.generator.api.dom.java.Method;
+import org.mybatis.generator.api.dom.java.TopLevelClass;
+import org.mybatis.generator.internal.util.StringUtility;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+
+/**
+ * 生成插件：
+ * 1. 实体类可以指定lombok注解，而不生成Getter，Setter方法
+ * 2. 可以指定继承的父类，会指定父接口使用的泛型类型（实体）
+ */
+public class DefaultGeneratorPlugin extends PluginAdapter {
+
+    private HashSet<String> rootMappers = new HashSet<>();
+
+    //是否需要生成Data注解
+    private boolean needsData = false;
+    //是否需要生成Getter注解
+    private boolean needsGetter = false;
+    //是否需要生成Setter注解
+    private boolean needsSetter = false;
+    //是否需要生成ToString注解
+    private boolean needsToString = false;
+    //是否需要生成Accessors(chain = true)注解
+    private boolean needsAccessors = false;
+    //是否需要生成EqualsAndHashCode注解
+    private boolean needsEqualsAndHashCode = false;
+
+    @Override
+    public boolean validate(List<String> warnings) {
+        return true;
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        super.setProperties(properties);
+        String rootMappers = properties.getProperty("rootMappers");
+        if (StringUtility.stringHasValue(rootMappers)) {
+            for (String mapper : rootMappers.split(",")) {
+                this.rootMappers.add(mapper);
+            }
+        }
+        //lombok扩展
+        String lombok = properties.getProperty("lombok");
+        if (lombok != null && !"".equals(lombok)) {
+            this.needsData = lombok.contains("Data");
+            //@Data 优先级高于 @Getter @Setter @RequiredArgsConstructor @ToString @EqualsAndHashCode
+            this.needsGetter = !this.needsData && lombok.contains("Getter");
+            this.needsSetter = !this.needsData && lombok.contains("Setter");
+            this.needsToString = !this.needsData && lombok.contains("ToString");
+            this.needsEqualsAndHashCode = !this.needsData && lombok.contains("EqualsAndHashCode");
+            this.needsAccessors = lombok.contains("Accessors");
+        }
+    }
+
+    @Override
+    public boolean clientGenerated(Interface interfaze, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        //获取实体类
+        FullyQualifiedJavaType entityType = new FullyQualifiedJavaType(introspectedTable.getBaseRecordType());
+        //import接口
+        for (String mapper : rootMappers) {
+            interfaze.addImportedType(new FullyQualifiedJavaType(mapper));
+            interfaze.addSuperInterface(new FullyQualifiedJavaType(mapper + "<" + entityType.getShortName() + ">"));
+        }
+        //import实体类
+        interfaze.addImportedType(entityType);
+        interfaze.addImportedType(new FullyQualifiedJavaType("org.apache.ibatis.annotations.Mapper"));
+        interfaze.addAnnotation("@Mapper");
+        return true;
+    }
+
+    /**
+     * 生成基础实体类
+     *
+     * @param topLevelClass
+     * @param introspectedTable
+     * @return
+     */
+    @Override
+    public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        //lombok扩展开始
+        //如果需要Data，引入包，代码增加注解
+        if (this.needsData) {
+            topLevelClass.addImportedType("lombok.Data");
+            topLevelClass.addAnnotation("@Data");
+        }
+        //如果需要Getter，引入包，代码增加注解
+        if (this.needsGetter) {
+            topLevelClass.addImportedType("lombok.Getter");
+            topLevelClass.addAnnotation("@Getter");
+        }
+        //如果需要Setter，引入包，代码增加注解
+        if (this.needsSetter) {
+            topLevelClass.addImportedType("lombok.Setter");
+            topLevelClass.addAnnotation("@Setter");
+        }
+        //如果需要ToString，引入包，代码增加注解
+        if (this.needsToString) {
+            topLevelClass.addImportedType("lombok.ToString");
+            topLevelClass.addAnnotation("@ToString");
+        }
+        //如果需要Getter，引入包，代码增加注解
+        if (this.needsAccessors) {
+            topLevelClass.addImportedType("lombok.experimental.Accessors");
+            topLevelClass.addAnnotation("@Accessors(chain = true)");
+        }
+        //如果需要Getter，引入包，代码增加注解
+        if (this.needsEqualsAndHashCode) {
+            topLevelClass.addImportedType("lombok.EqualsAndHashCode");
+            topLevelClass.addAnnotation("@EqualsAndHashCode");
+        }
+        return true;
+    }
+
+    /**
+     * 如果需要生成Getter注解，就不需要生成get相关代码了
+     */
+    @Override
+    public boolean modelGetterMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedColumn introspectedColumn, IntrospectedTable introspectedTable, ModelClassType modelClassType) {
+        return !(this.needsData || this.needsGetter);
+    }
+
+    /**
+     * 如果需要生成Setter注解，就不需要生成set相关代码了
+     */
+    @Override
+    public boolean modelSetterMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedColumn introspectedColumn, IntrospectedTable introspectedTable, ModelClassType modelClassType) {
+        return !(this.needsData || this.needsSetter);
+    }
+
+
+    @Override
+    public boolean clientInsertMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientInsertMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientInsertSelectiveMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientInsertSelectiveMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByPrimaryKeyMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByPrimaryKeyMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeySelectiveMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeySelectiveMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeyWithoutBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeyWithoutBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByPrimaryKeyMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByPrimaryKeyMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientCountByExampleMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientCountByExampleMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByExampleMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByExampleMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithoutBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithoutBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleSelectiveMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleSelectiveMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithoutBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithoutBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+}
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.MyBatisGenerator;
+import org.mybatis.generator.config.Configuration;
+import org.mybatis.generator.config.xml.ConfigurationParser;
+import org.mybatis.generator.internal.DefaultShellCallback;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Generator {
+
+    private static final boolean OVERWRITE = true;
+
+    private static final String CONFIG_PATH = "generator/config.xml";
+
+    public static void main(String[] args) throws Exception {
+
+        System.out.println("--------------------start generator-------------------");
+        List<String> warnings = new ArrayList<>();
+
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        InputStream is = classloader.getResourceAsStream(CONFIG_PATH);
+        ConfigurationParser cp = new ConfigurationParser(warnings);
+        Configuration config = cp.parseConfiguration(is);
+        DefaultShellCallback callback = new DefaultShellCallback(OVERWRITE);
+        MyBatisGenerator myBatisGenerator = new MyBatisGenerator(config, callback, warnings);
+        myBatisGenerator.generate(null);
+        warnings.forEach(System.err::println);
+        System.out.println("--------------------end generator-------------------");
+    }
+}
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.GeneratedXmlFile;
+import org.mybatis.generator.api.IntrospectedTable;
+import org.mybatis.generator.api.PluginAdapter;
+
+import java.lang.reflect.Field;
+import java.util.List;
+
+public class OverIsMergeablePlugin extends PluginAdapter {
+    @Override
+    public boolean validate(List<String> warnings) {
+        return true;
+    }
+
+    @Override
+    public boolean sqlMapGenerated(GeneratedXmlFile sqlMap, IntrospectedTable introspectedTable) {
+        try {
+            Field field = sqlMap.getClass().getDeclaredField("isMergeable");
+            field.setAccessible(true);
+            field.setBoolean(sqlMap, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+}
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+
+    <!-- 引入某个配置文件的信息，以 ${键} 的方式获取值 -->
+    <properties resource="application.properties" />
+
+    <context id="Mysql" defaultModelType="flat" targetRuntime="MyBatis3">
+
+        <!-- 表名或字段名为关键字的时候，生成的sql中给表名或字段名添加分隔符 ` -->
+        <property name="beginningDelimiter" value="true" />
+        <property name="endingDelimiter" value="true" />
+
+        <!-- 生成的Java文件的编码 -->
+        <property name="javaFileEncoding" value="UTF-8"/>
+
+        <!-- 自定义插件：Mapper不生成方法，指定父接口来继承使用 -->
+        <plugin type="org.example.tool.DefaultGeneratorPlugin">
+            <property name="rootMappers" value="org.example.base.BaseMapper" />
+            <property name="lombok" value="Getter,Setter,ToString"/>
+        </plugin>
+
+        <!-- 自定义插件：生成的XML文件会覆盖已有文件 -->
+        <plugin type="org.example.tool.OverIsMergeablePlugin" />
+
+        <!-- 自定义注释插件：生成的实体类中，根据表和字段的comment生成注释 -->
+        <commentGenerator type="org.example.tool.DefaultCommentGenerator" />
+
+        <!-- JDBC连接配置 -->
+        <jdbcConnection driverClass="${spring.datasource.driver-class-name}"
+                        connectionURL="${spring.datasource.url}"
+                        userId="${spring.datasource.username}"
+                        password="${spring.datasource.password}">
+            <!-- 读取数据库表定义的注释信息 -->
+            <property name="useInformationSchema" value="true" />
+        </jdbcConnection>
+
+        <!-- 默认false，把JDBC DECIMAL 和 NUMERIC 类型解析为 Integer，
+                为 true时把JDBC DECIMAL 和 NUMERIC 类型解析为java.math.BigDecimal -->
+        <javaTypeResolver>
+            <property name="forceBigDecimals" value="false" />
+        </javaTypeResolver>
+
+        <!-- 生成实体类的配置 -->
+        <javaModelGenerator targetProject="src/test/java"
+                            targetPackage="org.example.model">
+            <!-- 指定需要继承的父类 -->
+            <!--            <property name="rootClass" value="org.example.base.BaseEntity"/>-->
+        </javaModelGenerator>
+
+        <!-- 生成XML文件的配置 -->
+        <sqlMapGenerator targetProject="src/test/resources"
+                         targetPackage="mapper">
+        </sqlMapGenerator>
+
+        <!-- 生成Mapper接口配置 -->
+        <javaClientGenerator type="XMLMAPPER"
+                             targetProject="src/test/java"
+                             targetPackage="org.example.mapper">
+            <!-- 指定要继承的父接口 -->
+            <!--            <property name="rootInterface" value="org.example.base.BaseMapper"/>-->
+        </javaClientGenerator>
+
+        <!-- 需要生成的表，%表示模糊匹配，也可以指定具体的表名 -->
+        <table tableName="%"
+               enableCountByExample="false"
+               enableDeleteByExample="false"
+               enableSelectByExample="false"
+               enableUpdateByExample="false"
+        >
+            <!-- insert方法通过自增主键插入数据后，主键值是否设置到对象属性中 -->
+            <generatedKey column="id" sqlStatement="JDBC"/>
+            <!-- 字段覆盖：表中content字段为text数据类型时，默认会生成为二进制，可以指定为字符串 -->
+            <columnOverride column="content" jdbcType="VARCHAR" />
+        </table>
+    </context>
+</generatorConfiguration>
+
+
+debug=true
+# 设置打印日志的级别，及打印sql语句
+#日志级别：trace,debug,info,warn,error
+#基本日志
+logging.level.root=INFO
+#扫描的包：druid.sql.Statement类和frank包
+logging.level.druid.sql.Statement=ERROR
+logging.level.org.example=DEBUG
+
+# 美化JSON数据格式
+spring.jackson.serialization.indent-output=true
+# 设置JSON数据的日期格式
+spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+spring.jackson.time-zone=GMT+8
+# JSON数据属性为null时不返回
+spring.jackson.default-property-inclusion=non_null
+
+#数据库连接池配置：
+spring.datasource.driver-class-name=com.mysql.jdbc.Driver
+spring.datasource.url=jdbc:mysql://localhost:3306/chong_blog?useUnicode=true&characterEncoding=UTF-8&useSSL=false
+spring.datasource.username=root
+spring.datasource.password=wdtdz123
+
+#指定Mybatis表和实体映射关系xml配置文件，包含表与实体的映射，字段和属性的映射，及各个sql语句
+mybatis.mapper-locations=classpath:mapper/**Mapper.xml
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 默认使用的Spring Framework版本为5.2.10.RELEASE -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.3.5.RELEASE</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>org.example</groupId>
+    <artifactId>cn-blog</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <java.version>1.8</java.version>
+    </properties>
+
+    <dependencies>
+
+        <!-- spring-boot-starter-web: 基于SpringBoot开发的依赖包，
+                                 会再次依赖spring-framework中基本依赖包，aop相关依赖包，web相关依赖包，
+                                 还会引入其他如json，tomcat，validation等依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <!-- 排除tomcat依赖 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- 添加 Undertow 依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
+        </dependency>
+
+        <!--引入AOP依赖-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- mybatis-spring-boot-starter: Mybatis框架在SpringBoot中集成的依赖包，
+                                Mybatis是一种数据库对象关系映射Object-Relationl Mapping（ORM）框架，
+                                其他还有如Hibernate等 -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>2.1.3</version>
+        </dependency>
+
+        <!-- Mybatis代码生成工具 -->
+        <dependency>
+            <groupId>org.mybatis.generator</groupId>
+            <artifactId>mybatis-generator-core</artifactId>
+            <version>1.3.5</version>
+        </dependency>
+
+        <!-- druid-spring-boot-starter: 阿里Druid数据库连接池，同样的运行时需要 -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+
+        <!-- JDBC：mysql驱动包 -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.49</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- spring-boot-devtools: SpringBoot的热部署依赖包 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <!-- 不能被其它模块继承，如果多个子模块可以去掉 -->
+            <optional>true</optional>
+        </dependency>
+
+        <!-- lombok: 简化bean代码的框架 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- spring-boot-starter-test: SpringBoot测试框架 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- SpringBoot的maven打包插件 -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- 明确指定一些插件的版本，以免受到 maven 版本的影响 -->
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.2</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>3.3</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

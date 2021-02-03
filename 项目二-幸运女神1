@@ -1,0 +1,1186 @@
+package org.example.base;
+
+public interface BaseMapper<T> {
+
+    int deleteByPrimaryKey(Integer id);
+
+    int insert(T record);
+
+    int insertSelective(T record);
+
+    T selectByPrimaryKey(Integer id);
+
+    int updateByPrimaryKeySelective(T record);
+
+    int updateByPrimaryKey(T record);
+}
+
+
+package org.example.base;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@ToString
+public class JSONResponse {
+    private boolean success;
+    private String code;
+    private String message;
+    private Object data;
+}
+
+
+
+package org.example.config.interceptor;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.base.JSONResponse;
+import org.example.model.User;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.PrintWriter;
+
+public class LoginInterceptor implements HandlerInterceptor {
+
+    private ObjectMapper objectMapper;
+
+    public LoginInterceptor(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        HttpSession session = request.getSession(false);
+        if(session != null){//获取登录时设置的用户信息
+            User user = (User) session.getAttribute("user");
+            if(user != null){//登录了，允许访问
+                return true;
+            }
+        }
+        //登录失败，不允许访问的业务：区分前后端
+        //TODO：前端跳转登录页面，后端返回json
+//        new ObjectMapper().writeValueAsString(object);//序列化对象为json字符串
+        //请求的服务路径
+        String servletPath = request.getServletPath();//   /apiXXX.html
+        if(servletPath.startsWith("/api/")){//后端逻辑：返回json
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            JSONResponse json = new JSONResponse();
+            json.setCode("USR000");
+            json.setMessage("用户没有登录，不允许访问");
+            String s = objectMapper.writeValueAsString(json);
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            PrintWriter pw = response.getWriter();
+            pw.println(s);
+            pw.flush();
+        }else{//前端逻辑：跳转到登录页面 /views/index.html
+            //相对路径的写法，一定是请求路径作为相对位置的参照点
+            //使用绝对路径来重定向，不建议使用相对路径和转发
+            String schema = request.getScheme();//http
+            String host = request.getServerName();//ip
+            int port = request.getServerPort();//port
+            String contextPath = request.getContextPath();//application Context path应用上下文路径
+            String basePath = schema+"://"+host+":"+port+contextPath;
+            //重定向到登录页面
+            response.sendRedirect(basePath+"/index.html");
+        }
+        return false;
+    }
+}
+
+
+
+package org.example.config.web;
+
+import org.example.base.JSONResponse;
+import org.springframework.core.MethodParameter;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
+import org.springframework.web.method.support.ModelAndViewContainer;
+
+public class RequestResponseBodyMethodProcessorWrapper implements HandlerMethodReturnValueHandler {
+
+    private final HandlerMethodReturnValueHandler delegate;
+
+    public RequestResponseBodyMethodProcessorWrapper(HandlerMethodReturnValueHandler delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public boolean supportsReturnType(MethodParameter returnType) {
+        return delegate.supportsReturnType(returnType);
+    }
+
+    @Override
+    public void handleReturnValue(Object returnValue, MethodParameter returnType, ModelAndViewContainer mavContainer, NativeWebRequest webRequest) throws Exception {
+        //returnValue是Controller请求方法执行完，返回值
+        if(!(returnValue instanceof JSONResponse)){//返回值本身就是需要的类型，不进行处理
+            JSONResponse json = new JSONResponse();
+            json.setSuccess(true);
+            json.setData(returnValue);
+            returnValue = json;
+        }
+        delegate.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
+    }
+}
+
+
+package org.example.config;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.config.interceptor.LoginInterceptor;
+import org.example.config.web.RequestResponseBodyMethodProcessorWrapper;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
+import org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor;
+
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+
+//定义SpringMVC的启动配置类
+@Configuration
+public class AppConfig implements WebMvcConfigurer, InitializingBean {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Resource
+    private RequestMappingHandlerAdapter adapter;
+
+    //之前以@ControllerAdvice+实现ResponseBodyAdvice接口，完成统一处理返回数据包装：无法解决返回值为null需要包装
+    //改用现在这种方式，可以解决返回null包装为自定义类型
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        List<HandlerMethodReturnValueHandler> returnValueHandlers = adapter.getReturnValueHandlers();
+        List<HandlerMethodReturnValueHandler> handlers = new ArrayList(returnValueHandlers);
+        for(int i=0; i<handlers.size(); i++){
+            HandlerMethodReturnValueHandler handler = handlers.get(i);
+            if(handler instanceof RequestResponseBodyMethodProcessor){
+                handlers.set(i, new RequestResponseBodyMethodProcessorWrapper(handler));
+            }
+        }
+        adapter.setReturnValueHandlers(handlers);
+    }
+
+    //配置Controller中请求映射方法路径匹配规则
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        //设置路径前缀的规则，以第二个参数的返回值作为请求映射方法是否添加前缀
+        configurer.addPathPrefix("api", c->true);
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        //前端处理逻辑和后端处理逻辑是否一样？
+        //前端：敏感资源在拦截器中处理为：没登录跳转首页
+        //后端：敏感资源在拦截器中处理为：返回json，401状态码
+        registry.addInterceptor(new LoginInterceptor(objectMapper))
+                // *代表路径下一级，**代表路径的所有子级
+                //所有后端非/user/开头，只有指定的两个前端资源执行拦截器的逻辑
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/user/login")//后端开放的资源
+                .excludePathPatterns("/api/user/register")//后端开放的资源
+                .addPathPatterns("/draw.html")//抽奖页面
+                .addPathPatterns("/setting.html");//抽奖设置页面
+    }
+
+}
+
+
+
+
+package org.example.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.example.exception.AppException;
+import org.example.base.JSONResponse;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
+/**
+ * @ControllerAdvice: 方法上可以使用@ExceptionHandler处理异常
+ * @RestControllerAdvice: 由@ControllerAdvice和@ResponseBody组成
+ */
+@ControllerAdvice
+@Slf4j//使用lombok日志日志注解，之后使用log属性来完成日志打印
+public class ExceptionAdvice {
+
+    //自定义异常报错错误码和错误消息
+    @ExceptionHandler(AppException.class)
+    @ResponseBody
+    public Object handle1(AppException e){
+        JSONResponse json = new JSONResponse();
+        json.setCode(e.getCode());
+        json.setMessage(e.getMessage());
+//        log.debug(transfer(e));
+        log.debug("自定义异常", e);
+        return json;
+    }
+
+    //非自定义异常（英文错误信息，堆栈信息，不能给用户看）：
+    // 指定一个错误码，错误消息（未知错误，请联系管理员）
+    @ExceptionHandler(Exception.class)
+    @ResponseBody
+    public Object handle2(Exception e){
+        JSONResponse json = new JSONResponse();
+        json.setCode("ERR000");
+        json.setMessage("未知错误，请联系管理员");
+        log.error("未知错误", e);
+        return json;
+    }
+
+    public String transfer(Exception e){
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw, true);
+        e.printStackTrace(pw);//打印异常堆栈信息到PrintWriter
+        return sw.toString();
+    }
+}
+
+
+
+package org.example.controller;
+
+import org.example.service.AwardService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/award")
+public class AwardController {
+
+    @Autowired
+    private AwardService awardService;
+}
+
+
+
+package org.example.controller;
+
+import org.example.service.MemberService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/member")
+public class MemberController {
+
+    @Autowired
+    private MemberService memberService;
+}
+
+
+
+package org.example.controller;
+
+import org.example.service.RecordService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/record")
+public class RecordController {
+
+    @Autowired
+    private RecordService recordService;
+}
+
+
+
+package org.example.controller;
+
+import org.example.service.SettingService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/setting")
+public class SettingController {
+
+    @Autowired
+    private SettingService settingService;
+}
+
+
+
+package org.example.controller;
+
+import org.example.model.User;
+import org.example.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequestMapping("/user")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @PostMapping("/login")
+    public Object login(){
+
+    }
+
+
+    @PostMapping("/register") //注册一个用户，传入用户名和密码，包装成一个user类，传入一个头像文件参数
+    public Object register(User user, MultipartFile headFile){
+        //校验请求数据：后端必须要有
+
+        //保存上传的头像到服务器本地
+        userService.saveHead(headFile);
+        //上传的路径映射为http服务路径
+
+        //用户头像的http路径设置到user.head.把user传入数据库（插入操作）
+
+        return null;
+    }
+
+}
+‘
+
+
+’
+package org.example.exception;
+
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * 自定义异常：保存错误码和错误消息
+ */
+@Getter
+@Setter
+public class AppException extends RuntimeException {
+
+    private String code;
+
+    public AppException( String code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public AppException( String code, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
+    }
+}
+
+
+
+package org.example.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.example.base.BaseMapper;
+import org.example.model.Award;
+
+@Mapper
+public interface AwardMapper extends BaseMapper<Award> {
+}
+
+
+package org.example.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.example.base.BaseMapper;
+import org.example.model.Member;
+
+@Mapper
+public interface MemberMapper extends BaseMapper<Member> {
+}
+
+
+package org.example.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.example.base.BaseMapper;
+import org.example.model.Record;
+
+@Mapper
+public interface RecordMapper extends BaseMapper<Record> {
+}
+
+
+package org.example.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.example.base.BaseMapper;
+import org.example.model.Setting;
+
+@Mapper
+public interface SettingMapper extends BaseMapper<Setting> {
+}
+
+
+package org.example.mapper;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.example.base.BaseMapper;
+import org.example.model.User;
+
+@Mapper
+public interface UserMapper extends BaseMapper<User> {
+}
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Date;
+
+/**
+ * 奖项
+ */
+@Getter
+@Setter
+@ToString
+public class Award {
+    
+    private Integer id;
+
+    /**
+     * 奖项名称
+     */
+    private String name;
+
+    /**
+     * 奖项人数
+     */
+    private Integer count;
+
+    /**
+     * 奖品
+     */
+    private String award;
+
+    /**
+     * 抽奖设置id
+     */
+    private Integer settingId;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+}
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Date;
+
+/**
+ * 抽奖人员
+ */
+@Getter
+@Setter
+@ToString
+public class Member {
+    
+    private Integer id;
+
+    /**
+     * 姓名
+     */
+    private String name;
+
+    /**
+     * 工号
+     */
+    private String no;
+
+    /**
+     * 抽奖设置id
+     */
+    private Integer settingId;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+}
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Date;
+
+/**
+ * 中奖记录
+ */
+@Getter
+@Setter
+@ToString
+public class Record {
+    
+    private Integer id;
+
+    /**
+     * 中奖人员id
+     */
+    private Integer memberId;
+
+    /**
+     * 中奖奖项id
+     */
+    private Integer awardId;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+}
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Date;
+
+/**
+ * 抽奖设置
+ */
+@Getter
+@Setter
+@ToString
+public class Setting {
+    
+    private Integer id;
+
+    /**
+     * 用户id
+     */
+    private Integer userId;
+
+    /**
+     * 每次抽奖人数
+     */
+    private Integer batchNumber;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+}
+
+
+package org.example.model;
+
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Date;
+
+/**
+ * 用户表
+ */
+@Getter
+@Setter
+@ToString
+public class User {
+    
+    private Integer id;
+
+    /**
+     * 用户账号
+     */
+    private String username;
+
+    /**
+     * 密码
+     */
+    private String password;
+
+    /**
+     * 用户昵称
+     */
+    private String nickname;
+
+    /**
+     * 邮箱
+     */
+    private String email;
+
+    /**
+     * 年龄
+     */
+    private Integer age;
+
+    /**
+     * 头像url
+     */
+    private String head;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+}
+
+
+package org.example.service;
+
+import org.example.mapper.AwardMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AwardService {
+
+    @Autowired
+    private AwardMapper awardMapper;
+}
+
+
+
+package org.example.service;
+
+import org.example.mapper.MemberMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MemberService {
+
+    @Autowired
+    private MemberMapper memberMapper;
+}
+
+
+
+package org.example.service;
+
+import org.example.mapper.RecordMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RecordService {
+
+    @Autowired
+    private RecordMapper recordMapper;
+}
+
+
+
+package org.example.service;
+
+import org.example.mapper.SettingMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SettingService {
+
+    @Autowired
+    private SettingMapper settingMapper;
+}
+
+
+
+package org.example.service;
+
+import org.example.mapper.UserMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserMapper userMapper;
+
+    public void saveHead(MultipartFile headFile) {
+    }
+}
+
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.CommentGenerator;
+import org.mybatis.generator.api.IntrospectedColumn;
+import org.mybatis.generator.api.IntrospectedTable;
+import org.mybatis.generator.api.dom.java.*;
+import org.mybatis.generator.api.dom.xml.XmlElement;
+import org.mybatis.generator.internal.util.StringUtility;
+
+import java.util.Properties;
+
+public class DefaultCommentGenerator implements CommentGenerator {
+    @Override
+    public void addConfigurationProperties(Properties properties) {
+
+    }
+
+    @Override
+    public void addFieldComment(Field field, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn) {
+        if(introspectedColumn.isIdentity())
+            field.addJavaDocLine("");
+        if (StringUtility.stringHasValue(introspectedColumn.getRemarks())) {
+            field.addJavaDocLine("/**");
+            StringBuilder sb = new StringBuilder();
+            sb.append(" * ");
+            sb.append(introspectedColumn.getRemarks());
+            field.addJavaDocLine(sb.toString());
+            field.addJavaDocLine(" */");
+        }
+    }
+
+    @Override
+    public void addFieldComment(Field field, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addModelClassComment(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        if (StringUtility.stringHasValue(introspectedTable.getRemarks())) {
+            topLevelClass.addJavaDocLine("/**");
+            topLevelClass.addJavaDocLine(" * "+introspectedTable.getRemarks());
+            topLevelClass.addJavaDocLine(" */");
+        }
+    }
+
+    @Override
+    public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable, boolean markAsDoNotDelete) {
+
+    }
+
+    @Override
+    public void addEnumComment(InnerEnum innerEnum, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addGetterComment(Method method, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn) {
+
+    }
+
+    @Override
+    public void addSetterComment(Method method, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn) {
+
+    }
+
+    @Override
+    public void addGeneralMethodComment(Method method, IntrospectedTable introspectedTable) {
+
+    }
+
+    @Override
+    public void addJavaFileComment(CompilationUnit compilationUnit) {
+
+    }
+
+    @Override
+    public void addComment(XmlElement xmlElement) {
+
+    }
+
+    @Override
+    public void addRootComment(XmlElement rootElement) {
+
+    }
+}
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.IntrospectedColumn;
+import org.mybatis.generator.api.IntrospectedTable;
+import org.mybatis.generator.api.PluginAdapter;
+import org.mybatis.generator.api.dom.java.FullyQualifiedJavaType;
+import org.mybatis.generator.api.dom.java.Interface;
+import org.mybatis.generator.api.dom.java.Method;
+import org.mybatis.generator.api.dom.java.TopLevelClass;
+import org.mybatis.generator.internal.util.StringUtility;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+
+/**
+ * 生成插件：
+ * 1. 实体类可以指定lombok注解，而不生成Getter，Setter方法
+ * 2. 可以指定继承的父类，会指定父接口使用的泛型类型（实体）
+ */
+public class DefaultGeneratorPlugin extends PluginAdapter {
+
+    private HashSet<String> rootMappers = new HashSet<>();
+
+    //是否需要生成Data注解
+    private boolean needsData = false;
+    //是否需要生成Getter注解
+    private boolean needsGetter = false;
+    //是否需要生成Setter注解
+    private boolean needsSetter = false;
+    //是否需要生成ToString注解
+    private boolean needsToString = false;
+    //是否需要生成Accessors(chain = true)注解
+    private boolean needsAccessors = false;
+    //是否需要生成EqualsAndHashCode注解
+    private boolean needsEqualsAndHashCode = false;
+
+    @Override
+    public boolean validate(List<String> warnings) {
+        return true;
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        super.setProperties(properties);
+        String rootMappers = properties.getProperty("rootMappers");
+        if (StringUtility.stringHasValue(rootMappers)) {
+            for (String mapper : rootMappers.split(",")) {
+                this.rootMappers.add(mapper);
+            }
+        }
+        //lombok扩展
+        String lombok = properties.getProperty("lombok");
+        if (lombok != null && !"".equals(lombok)) {
+            this.needsData = lombok.contains("Data");
+            //@Data 优先级高于 @Getter @Setter @RequiredArgsConstructor @ToString @EqualsAndHashCode
+            this.needsGetter = !this.needsData && lombok.contains("Getter");
+            this.needsSetter = !this.needsData && lombok.contains("Setter");
+            this.needsToString = !this.needsData && lombok.contains("ToString");
+            this.needsEqualsAndHashCode = !this.needsData && lombok.contains("EqualsAndHashCode");
+            this.needsAccessors = lombok.contains("Accessors");
+        }
+    }
+
+    @Override
+    public boolean clientGenerated(Interface interfaze, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        //获取实体类
+        FullyQualifiedJavaType entityType = new FullyQualifiedJavaType(introspectedTable.getBaseRecordType());
+        //import接口
+        for (String mapper : rootMappers) {
+            interfaze.addImportedType(new FullyQualifiedJavaType(mapper));
+            interfaze.addSuperInterface(new FullyQualifiedJavaType(mapper + "<" + entityType.getShortName() + ">"));
+        }
+        //import实体类
+        interfaze.addImportedType(entityType);
+        interfaze.addImportedType(new FullyQualifiedJavaType("org.apache.ibatis.annotations.Mapper"));
+        interfaze.addAnnotation("@Mapper");
+        return true;
+    }
+
+    /**
+     * 生成基础实体类
+     *
+     * @param topLevelClass
+     * @param introspectedTable
+     * @return
+     */
+    @Override
+    public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        //lombok扩展开始
+        //如果需要Data，引入包，代码增加注解
+        if (this.needsData) {
+            topLevelClass.addImportedType("lombok.Data");
+            topLevelClass.addAnnotation("@Data");
+        }
+        //如果需要Getter，引入包，代码增加注解
+        if (this.needsGetter) {
+            topLevelClass.addImportedType("lombok.Getter");
+            topLevelClass.addAnnotation("@Getter");
+        }
+        //如果需要Setter，引入包，代码增加注解
+        if (this.needsSetter) {
+            topLevelClass.addImportedType("lombok.Setter");
+            topLevelClass.addAnnotation("@Setter");
+        }
+        //如果需要ToString，引入包，代码增加注解
+        if (this.needsToString) {
+            topLevelClass.addImportedType("lombok.ToString");
+            topLevelClass.addAnnotation("@ToString");
+        }
+        //如果需要Getter，引入包，代码增加注解
+        if (this.needsAccessors) {
+            topLevelClass.addImportedType("lombok.experimental.Accessors");
+            topLevelClass.addAnnotation("@Accessors(chain = true)");
+        }
+        //如果需要Getter，引入包，代码增加注解
+        if (this.needsEqualsAndHashCode) {
+            topLevelClass.addImportedType("lombok.EqualsAndHashCode");
+            topLevelClass.addAnnotation("@EqualsAndHashCode");
+        }
+        return true;
+    }
+
+    /**
+     * 如果需要生成Getter注解，就不需要生成get相关代码了
+     */
+    @Override
+    public boolean modelGetterMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedColumn introspectedColumn, IntrospectedTable introspectedTable, ModelClassType modelClassType) {
+        return !(this.needsData || this.needsGetter);
+    }
+
+    /**
+     * 如果需要生成Setter注解，就不需要生成set相关代码了
+     */
+    @Override
+    public boolean modelSetterMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedColumn introspectedColumn, IntrospectedTable introspectedTable, ModelClassType modelClassType) {
+        return !(this.needsData || this.needsSetter);
+    }
+
+
+    @Override
+    public boolean clientInsertMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientInsertMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientInsertSelectiveMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientInsertSelectiveMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByPrimaryKeyMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByPrimaryKeyMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeySelectiveMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeySelectiveMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeyWithoutBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByPrimaryKeyWithoutBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByPrimaryKeyMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByPrimaryKeyMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientCountByExampleMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientCountByExampleMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByExampleMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientDeleteByExampleMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithoutBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientSelectByExampleWithoutBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleSelectiveMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleSelectiveMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithoutBLOBsMethodGenerated(Method method, Interface interfaze, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+    @Override
+    public boolean clientUpdateByExampleWithoutBLOBsMethodGenerated(Method method, TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        return false;
+    }
+
+}
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.MyBatisGenerator;
+import org.mybatis.generator.config.Configuration;
+import org.mybatis.generator.config.xml.ConfigurationParser;
+import org.mybatis.generator.internal.DefaultShellCallback;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Generator {
+
+    private static final boolean OVERWRITE = true;
+
+    private static final String CONFIG_PATH = "generator/config.xml";
+
+    public static void main(String[] args) throws Exception {
+
+        System.out.println("--------------------start generator-------------------");
+        List<String> warnings = new ArrayList<>();
+
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        InputStream is = classloader.getResourceAsStream(CONFIG_PATH);
+        ConfigurationParser cp = new ConfigurationParser(warnings);
+        Configuration config = cp.parseConfiguration(is);
+        DefaultShellCallback callback = new DefaultShellCallback(OVERWRITE);
+        MyBatisGenerator myBatisGenerator = new MyBatisGenerator(config, callback, warnings);
+        myBatisGenerator.generate(null);
+        warnings.forEach(System.err::println);
+        System.out.println("--------------------end generator-------------------");
+    }
+}
+
+
+package org.example.tool;
+
+import org.mybatis.generator.api.GeneratedXmlFile;
+import org.mybatis.generator.api.IntrospectedTable;
+import org.mybatis.generator.api.PluginAdapter;
+
+import java.lang.reflect.Field;
+import java.util.List;
+
+public class OverIsMergeablePlugin extends PluginAdapter {
+    @Override
+    public boolean validate(List<String> warnings) {
+        return true;
+    }
+
+    @Override
+    public boolean sqlMapGenerated(GeneratedXmlFile sqlMap, IntrospectedTable introspectedTable) {
+        try {
+            Field field = sqlMap.getClass().getDeclaredField("isMergeable");
+            field.setAccessible(true);
+            field.setBoolean(sqlMap, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+}
+
+
+package org.example;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+
+
+
+
+
+

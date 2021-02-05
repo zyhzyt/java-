@@ -1,0 +1,178 @@
+import java.util.Scanner;
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int year = sc.nextInt();
+        int month = sc.nextInt();
+        int day = sc.nextInt();
+        int dayNum = 0;
+        if (year <= 0 || month <= 0 || month > 12 || day <= 0 || day > 31) {
+            System.out.println(-1);
+        } else {
+            for (int i = 1; i < month; i++) {
+                if (i == 1 || i == 3 || i == 5 || i == 7 || i == 8 || i == 10 || i == 12) {
+                    dayNum += 31;
+                } else if (i == 4 || i == 6 || i == 9 || i == 11) {
+                    dayNum += 30;
+                } else if (i == 2 && (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0))) {
+                    dayNum += 29;
+                } else {
+                    dayNum += 28;
+                }
+            }
+            System.out.println(dayNum+day);
+        }
+    }
+}
+import java.util.*;
+class ReverseOutput{
+    public static void main(String[] args){
+        Scanner sc = new Scanner(System.in);
+        String s = sc.nextLine();
+        char ch[] = s.toCharArray();
+        Stack<Character> stack = new Stack<>();
+        ArrayList<Character> list = new ArrayList<>();
+        int i = ch.length - 1;
+        while(i >= 0){
+            if((ch[i]>= 'a' && ch[i] <= 'z') || (ch[i]>= 'A' && ch[i] <= 'Z' )){
+                stack.push(ch[i]); //如果是字母，则入栈。
+                i--;
+            }
+            else{
+                //这里判断栈不为空，如果是连续的非字母字符，则进不去循环，从而避免了结果出现连续空格的情况。
+                while(!stack.empty()){
+                    list.add(stack.pop());
+                    if(stack.empty() && i != 0)
+//之所以并上i不为0这个条件，是因为如果字符串开头是非字母字符，那么那么没有i ！= 0这个条件的话输出的最后一个单词后面会有一个空格。所以我将最后一个单词放在循环外面输出，也就是下面的while循环。
+                        list.add(' ');
+                }
+                i--;
+            }
+        }
+        while(!stack.empty()){
+            list.add(stack.pop());
+        }
+        for(int j = 0 ; j < list.size() ; j++){
+            System.out.print(list.get(j));
+        }
+    }
+}
+public class Main {
+    //付应每一组数据，输出变量名相应的骆驼命名法。
+    public static void main1(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNext()){
+            String s0 = sc.nextLine();
+            String[] s = s0.split("_");
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0;i < s.length;i++){
+                for (int j = 0;j < s[i].length();j++) {
+                    if (j == 0){
+                        sb.append(String.valueOf(s[i].charAt(0)).toUpperCase());
+                    }
+                    else {
+                        sb.append(s[i].charAt(j));
+                    }
+                }
+            }
+            System.out.println(sb.toString());
+        }
+    }
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNext()){
+            String s0 = sc.nextLine();
+            StringBuilder sb = new StringBuilder();
+            int a = 0;
+            for (int i = 0;i < s0.length();){
+                if (s0.charAt(i) == '_' || i==0){
+                    if (i == 0){
+                        sb.append(String.valueOf(s0.charAt(0)).toUpperCase());
+                    }
+                    else {
+                        a = i + 1;
+                        sb.append(String.valueOf(s0.charAt(a)).toUpperCase());
+                    }
+                } else {
+                    sb.append(s0.charAt(i));
+                }
+                if (a == i+1){
+                    i=a+1;
+                }
+                else {
+                    i++;
+                }
+            }
+            System.out.println(sb.toString());
+        }
+    }
+
+}
+import java.util.Arrays;
+import java.util.Scanner;
+//寻找兄弟单词
+public class Main1 {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNext()){
+            int n = sc.nextInt();
+            String[] str = new String[n];
+            String result = "";
+            for(int i = 0;i< n;i++){
+                str[i] = sc.next();
+            }
+            //将输入的字符串存到字符串数组
+            Arrays.sort(str);
+            //将字符数组用Arrays.sort()方法 排序后存放 便于比较
+            String target = sc.next();
+            //输入目标单词
+            int k = sc.nextInt();
+            //要输出第k个兄弟单词
+            int count = 0;//计算兄弟单词
+            for (int i  = 0;i < n;i++){
+                if(Isfriend(target,str[i])){
+                    //调用方法进行比较，如果是兄弟单词，计数器+1
+                    count += 1;
+                    if(k == count){
+                        //+到第k个兄弟单词时 直接将兄弟单词传给result，便于后面输出
+                        result = str[i];
+                    }
+                }
+            }
+            System.out.println(count+" ");
+            //输出兄弟单词数目
+            if(count >= k){
+                //判断输出第k个单词
+                System.out.println(result);
+            }
+        }
+    }
+    //判断是否是兄弟单词的方法
+    private static boolean Isfriend(String S1, String S2){
+        boolean b = false;
+        if(S1.length() != S2.length()){
+            //长度不相等返回false
+            b = false;
+        }
+        if(S1.equals(S2)){
+            //equals判断不相等 返回 false
+            b = false;
+        }else {
+            if(sort(S1).equals(sort(S2))){
+                //排序后相等返回true  这里用了自己定义的sort排序方法
+                b = true;
+            }
+        }
+        return b;
+    }
+    //自己定义的排序方法
+    private static String sort(String str){
+        char[] s = str.toCharArray();
+        String result = "";
+        Arrays.sort(s);
+        for(int i = 0;i<s.length;i++){
+            result += s[i];
+        }
+        return result;
+    }
+}

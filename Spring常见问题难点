@@ -1,0 +1,130 @@
+
+容器：Bean容器/Ioc容器的理解，集合框架容器，Tomcat容器（Servlet容器）
+
+JavaEE
+Bean容器/Ioc容器的理解
+Spring容器主要是对IoC设计模式的实现，主要是使用容器来统一管理Bean对象，及管理对象之间的依 赖关系。 
+创建容器的API主要是BeanFactory和ApplicationContext两种： 
+1. BeanFactory是最底层的容器接口，只提供了最基础的容器功能：Bean 的实例化和依赖注入，并 且使用懒加载的方式，这意味着 beans 只有在我们通过 getBean() 方法直接调用它们时才进行实例 化。 
+2. ApplicationContext（应用上下文）是BeanFactory的子接口，与 BeanFactory 懒加载的方式不 同，它是预加载，所以，每一个 bean 都在 ApplicationContext 启动之后实例化。
+3. 除了基础功能，还添加了很多增强： 整合了Bean的生命周期管理 i18n国际化功能（MessageSource） 载入多个（有继承关系）上下文 ，使得每一个上下文都专注于一个特定的层次，比如应用的 web层 事件发布响应机制（ApplicationEventPublisher） AOP
+
+
+IoC/DI的理解
+IoC (Inversion of Control) 即控制反转，是面向对象编程中的一种设计原则。主要是通过第三方IoC容 器，对Bean对象进行统一管理，及组织对象之间的依赖关系。获得依赖对象的过程，由原本程序自己控 制，变为了IoC容器来主动注入，控制权发生了反转，所以叫做IoC，控制反转。
+ 
+IoC又叫做DI：由于控制反转概念比较含糊（可能只是理解为容器控制对象这一个层面，很难让人想到谁 来维护对象关系），相对 IoC 而言，依赖注入实际上给出了实现IoC的方法：注入。所谓依赖注入，就是 由 IoC 容器在运行期间，动态地将某种依赖关系注入到对象之中。 
+依赖注入(DI)和控制反转(IoC)是从不同的角度的描述的同一件事情，就是指通过引入IoC容器，利用依赖 关系注入的方式，实现对象之间的解耦
+
+实现方式：
+DI是IoC的实现方式之一。而DI 的实现方式主要有两种：
+构造方法注入     和
+属性Setter注入。
+
+
+实现原理 
+主要依赖反射及ASM字节码框架实现（字节码框架操作字节码更为高效，功能更强大）。
+
+Spring中的单例bean的线程安全问题
+单例bean存在线程问题，主要是因为当多个线程操作同一个对象的时候，对这个对象的非静态成员变量的写操作会存在线程安全问题。 
+有两种常见的解决方案： 
+1.在bean对象中尽量避免定义可变的成员变量（不太现实）。 
+2.在类中定义一个ThreadLocal成员变量，将需要的可变成员变量保存在ThreadLocal中（推荐的一种方式）。
+ 
+
+Spring中的bean的作用域有哪些？
+1.singleton（单例）：唯一bean实例，Spring中的bean默认都是单例的。 
+2.prototype（实现面向对象机制）：每次请求都会创建一个新的bean实例。 
+3.request：每一次HTTP请求都会产生一个新的bean，该bean仅在当前HTTP request内有效。 
+4.session：每一次HTTP请求都会产生一个新的bean，该bean仅在当前HTTP session内有效。 
+5.application：在一个应用的Servlet上下文生命周期中，产生一个新的bean 
+6.websocket：在一个WebSocket生命周期中，产生一个新的Bean
+
+FactoryBean和BeanFactory
+BeanFactory是Spring容器的顶级接口，所有Bean对象都是通过BeanFactory也就是Bean容器来进行管 理 
+FactoryBean是实例化一个Bean对象的工厂类，实现了 FactoryBean 接口的Bean，根据该Bean的 ID从BeanFactory中获取的实际上是FactoryBean中 getObject() 方法返回的对象，而不是 FactoryBean本身，如果要获取FactoryBean对象，请在id前面加一个&符号来获取。
+
+Bean的生命周期
+1. 实例化Bean：通过反射调用构造方法实例化对象。 
+2. 依赖注入：装配Bean的属性 
+3. 实现了Aware接口的Bean，执行接口方法：如顺序执行BeanNameAware、BeanFactoryAware、 ApplicationContextAware的接口方法。 
+4. Bean对象初始化前，循环调用实现了BeanPostProcessor接口的预初始化方法 （postProcessBeforeInitialization） 
+5. 执行Bean对象初始化方法 
+6. Bean对象初始化后，循环调用实现了BeanPostProcessor接口的后初始化方法 （postProcessAfterInitialization） 
+7. 容器关闭时，执行Bean对象的销毁方法
+
+Spring三级缓存的理解
+Spring是如何解决循环依赖的？ Spring的三级缓存
+什么是循环依赖？A对象依赖B对象，B对象又依赖A对象，只要产生了依赖关系的闭环， 即造成了循环依赖
+
+初始化完成的Bean，也即Spring容器中完整的Bean对象
+1. 启动容器：加载Bean
+2. 实例化Bean对象 
+3. 依赖注入：装配Bean的属性 
+4. 初始化Bean：执行aware接口方法、预初始化方法、初始化方法、后初始化方法 
+得到了一个完整的Bean对象
+5. 关闭容器：销毁Bean
+
+
+AOP的理解
+AOP（Aspect-Oriented Programming）：面向切面编程。对多个业务代码横切来实现统一的业务管 理，而不用侵入业务代码本身。这样面向切面的编程思想就是AOP。
+ 
+使用场景：日志记录，事务管理，性能统计，安全控制，异常处理等 
+
+优点：代码解耦，统一业务功能对具体业务无侵入性，这样可扩展性更好，灵活性更高 
+
+SpringAOP是采取动态代理的方式，具体是基于JDK和CGLIB两种： 
+JDK动态代理：需要被代理类实现接口，使用 InvocationHandler 和 Proxy 动态的生成代理类 
+CGLIB动态代理：需要被代理类能被继承，不能被final修饰。使用 MethodInterceptor 来对方法 拦截。CGLIB底层是基于ASM字节码框架，在运行时动态生成代理类 
+
+SpringAOP如何使用：
+@Aspect定义切面，并注册到容器中，使用
+@Pointcut定义好切点方法后，可以 对目标方法进行拦截： 前置通知 使用@Before：通知方法会在目标方法调用之前执行。 后置通知 使用
+@After：通知方法会在目标方法返回或者抛出异常后调用。 返回之后通知 使用
+@AfterReturning：通知方法会在目标方法返回后调用。 抛异常后通知 使用
+@AfterThrowing：通知方法会在目标方法抛出异常后调用。 环绕通知 使用
+@Around：通知包裹了被通知的方法，在被通知的方法通知之前和调用之后执行自定义的行为
+
+
+
+Spring事务中的隔离级别有哪几种？
+ 
+四大特性：原子性、一致性、隔离性、持久性
+ 
+ 
+SpringMVC的流程
+ 
+
+SpringMVC的请求响应步骤如下： 
+具体步骤： 
+第一步：（发起）发起请求到前端控制器(DispatcherServlet) 
+第二步：（查找）前端控制器请求HandlerMapping查找 Handler（可以根据xml配置、注解进行 查找） 
+第三步：（返回）处理器映射器HandlerMapping向前端控制器返回Handler，HandlerMapping 会把请求映射为HandlerExecutionChain对象（包含一个Handler处理器（页面控制器）对象，多 个HandlerInterceptor拦截器对象），通过这种策略模式，很容易添加新的映射策略 
+第四步：（调用）前端控制器调用处理器适配器去执行Handler 
+第五步：（执行）处理器适配器HandlerAdapter将会根据适配的结果去执行Handler 
+第六步：（返回）Handler执行完成给适配器返回ModelAndView 
+第七步：（接收）处理器适配器向前端控制器返回ModelAndView （ModelAndView是 SpringMVC框架的一个底层对象，包括 Model和view） 
+第八步：（解析）前端控制器请求视图解析器去进行视图解析 （根据逻辑视图名解析成真正的视图 (jsp)），通过这种策略很容易更换其他视图技术，只需要更改视图解析器即可 
+第九步：（返回）视图解析器向前端控制器返回View 
+第十步：（渲染）前端控制器进行视图渲染 （视图渲染将模型数据(在ModelAndView对象中)填充 到request域） 
+第十一步：（响应）前端控制器向用户响应结果 
+
+
+以下是对出现的一些组件的介绍： 
+(1) 前端控制器DispatcherServlet（不需要程序员开发）。 作用：接收请求，响应结果，相当于转发器，中央处理器。有了DispatcherServlet减少了其它组件 之间的耦合度。
+(2) 处理器映射器HandlerMapping（不需要程序员开发）。 作用：根据请求的url查找Handler。 (3) 处理器适配器HandlerAdapter（不需要程序员开发）。 作用：按照特定规则（HandlerAdapter要求的规则）去执行Handler。 
+(4) 处理器Handler（需要程序员开发）。 注意：编写Handler时按照HandlerAdapter的要求去做，这样适配器才可以去正确执行Handler 
+(5) 视图解析器ViewResolver（不需要程序员开发）。 作用：进行视图解析，根据逻辑视图名解析成真正的视图（view） 
+(6) 视图View（需要程序员开发jsp）。 注意：View是一个接口，实现类支持不同的View类型（jsp、freemarker、pdf…） ps:不需要程序员开发的，需要程序员自己做一下配置即可。
+
+
+
+SpringBoot自动化配置的理解
+Mybatis中，#{}和${}的区别
+
+#{变量名} 是预处理替换的方式，本质是 jdbc 中占位符的替换。如传入字符串，会替换为带单引号的 值。可以安全性更好， 
+
+${变量名} 是字符串的替换，只是对 sql 字符串进行拼接。如传入字符串，会直接替换为字符串的值，不 加单引号。
+ 
+#的方式可以很大程度的防止 sql 注入，相对来说更安全。而$的方式不能。
+
